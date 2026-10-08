@@ -1,7 +1,7 @@
 ---
 name: Epic
 about: Define a major capability or logical group of related work.
-title: ''
+title: 'Epic: '
 labels: ''
 assignees: ''
 ---
