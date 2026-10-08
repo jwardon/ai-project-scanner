@@ -22,6 +22,14 @@ The project is focused on security analysis of the contents of AI/ML projects, i
 
 The project is not intended to be a general-purpose network or live AI infrastructure vulnerability scanner.
 
+## Usage
+
+Inspect a pickle file's opcodes without deserializing it:
+
+```
+PYTHONPATH=src python -m ai_project_scanner path/to/file.pkl
+```
+
 ## License
 
 Licensed under the Apache License 2.0. See [LICENSE](LICENSE).
