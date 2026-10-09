@@ -30,6 +30,7 @@ The project favors a small number of well-supported analyses over superficial co
 - Add or update automated tests for behavior introduced or changed by the issue.
 - Include relevant error and security-boundary cases, not only successful paths.
 - Security tests should verify that prohibited behavior does not occur, not merely that expected output is produced.
+- Aim for at least 80% test coverage, but prioritize meaningful behavioral, error-path, and security-boundary tests over the coverage percentage alone.
 - Keep tests deterministic and independent of external services unless the issue explicitly requires otherwise.
 
 ## Architecture and Scope
