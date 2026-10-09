@@ -14,11 +14,15 @@ def test_valid_pickle_reports_ordered_opcodes_with_offsets(tmp_path):
     p.write_bytes(pickle.dumps([1, "a"], protocol=2))
     result = scan_pickle_file(p)
     assert result.ok
-    names = [e.name for e in result.evidence]
+    names = [e.attributes["opcode"] for e in result.evidence]
     assert names[0] == "PROTO" and names[-1] == "STOP"
     assert "BINUNICODE" in names
-    offsets = [e.offset for e in result.evidence]
+    offsets = [e.attributes["offset"] for e in result.evidence]
     assert offsets == sorted(offsets) and offsets[0] == 0
+    first = result.evidence[0]
+    assert first.description == "Pickle opcode PROTO"
+    assert first.location == "byte offset 0"
+    assert first.value == 2
 
 
 def test_all_protocols(tmp_path):
@@ -62,7 +66,7 @@ def test_payload_not_executed(tmp_path):
     p.write_bytes(pickle.dumps(_Payload()))
     result = scan_pickle_file(p)
     assert result.ok
-    assert "REDUCE" in [e.name for e in result.evidence]
+    assert "REDUCE" in [e.attributes["opcode"] for e in result.evidence]
     assert not MARKER.exists()
 
 

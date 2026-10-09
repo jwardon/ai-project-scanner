@@ -6,6 +6,12 @@ import sys
 
 from .pickle_scanner import scan_pickle_file
 
+_MAX_VALUE = 200
+
+
+def _truncate(text: str) -> str:
+    return text if len(text) <= _MAX_VALUE else text[:_MAX_VALUE] + "..."
+
 
 def main(argv: list[str] | None = None) -> int:
     args = sys.argv[1:] if argv is None else argv
@@ -15,9 +21,9 @@ def main(argv: list[str] | None = None) -> int:
     result = scan_pickle_file(args[0])
     print(f"Target: {result.target}")
     for ev in result.evidence:
-        line = f"{ev.offset:>8}  {ev.name}"
-        if ev.detail is not None:
-            line += f"  {ev.detail}"
+        line = f"{ev.attributes['offset']:>8}  {ev.attributes['opcode']}"
+        if ev.value is not None:
+            line += f"  {_truncate(repr(ev.value))}"
         print(line)
     for err in result.errors:
         print(f"error: {err}", file=sys.stderr)

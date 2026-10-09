@@ -3,17 +3,17 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Any
 
 
-@dataclass(frozen=True)
+@dataclass
 class Evidence:
-    """A single observation made during analysis, with its location."""
+    """A single observation made during analysis."""
 
-    kind: str
-    name: str
-    offset: int
-    detail: Optional[str] = None
+    description: str
+    location: str | None = None
+    value: Any | None = None
+    attributes: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
