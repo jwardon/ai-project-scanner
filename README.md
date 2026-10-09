@@ -1,6 +1,6 @@
 # AI Project Scanner
 
-[![CI](https://github.com/jwardon/ai-project-scanner/actions/workflows/ci.yml/badge.svg)](https://github.com/jwardon/ai-project-scanner/actions/workflows/ci.yml)
+[![Code Quality](https://github.com/jwardon/ai-project-scanner/actions/workflows/ci.yml/badge.svg)](https://github.com/jwardon/ai-project-scanner/actions/workflows/ci.yml)
 
 AI Project Scanner is an open-source security scanner for AI/ML projects, including source code, dependencies, models, configuration, and provenance.
 
