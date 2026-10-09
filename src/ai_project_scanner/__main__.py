@@ -33,6 +33,14 @@ def main(argv: list[str] | None = None) -> int:
             if ev.value is not None:
                 line += f"  {_truncate(repr(ev.value))}"
             print(line)
+        for inv in result.invocations:
+            args = "<unresolved>" if inv.arguments is None else repr(inv.arguments)
+            print(
+                f"{inv.offset:>8}  {inv.operation} -> "
+                f"{inv.callable}{_truncate(args)}"
+            )
+        for lim in result.limitations:
+            print(f"limitation: {lim}")
         for err in result.errors:
             print(f"error: {result.target}: {err}", file=sys.stderr)
     return 0 if ok else 1

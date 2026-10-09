@@ -17,12 +17,29 @@ class Evidence:
 
 
 @dataclass
+class Invocation:
+    """A statically traced invocation of a callable.
+
+    ``callable`` is a dotted name such as ``builtins.eval``. ``arguments`` holds
+    the statically reconstructed argument values, preserved only as evidence, or
+    ``None`` when they could not be resolved.
+    """
+
+    callable: str
+    arguments: tuple[Any, ...] | None
+    operation: str
+    offset: int
+
+
+@dataclass
 class ScanResult:
     """Outcome of scanning one target."""
 
     target: str
     evidence: list[Evidence] = field(default_factory=list)
     errors: list[str] = field(default_factory=list)
+    invocations: list[Invocation] = field(default_factory=list)
+    limitations: list[str] = field(default_factory=list)
 
     @property
     def ok(self) -> bool:

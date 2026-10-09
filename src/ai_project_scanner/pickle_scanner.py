@@ -10,6 +10,7 @@ import io
 import os
 import pickletools
 
+from .pickle_interpreter import PickleInterpreter
 from .results import Evidence, ScanResult
 
 
@@ -23,6 +24,7 @@ def scan_pickle_file(path: str | os.PathLike) -> ScanResult:
         result.errors.append(f"Cannot read file: {exc}")
         return result
 
+    interpreter = PickleInterpreter()
     try:
         for opcode, arg, pos in pickletools.genops(io.BytesIO(data)):
             result.evidence.append(
@@ -33,6 +35,9 @@ def scan_pickle_file(path: str | os.PathLike) -> ScanResult:
                     attributes={"opcode": opcode.name, "offset": pos},
                 )
             )
+            interpreter.step(opcode.name, arg, pos)
     except Exception as exc:  # malformed input must yield a controlled error
         result.errors.append(f"Malformed or truncated pickle: {exc}")
+    result.invocations = interpreter.invocations
+    result.limitations = interpreter.limitations
     return result
