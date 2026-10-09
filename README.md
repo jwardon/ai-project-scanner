@@ -16,7 +16,7 @@ AI Project Scanner applies security principles described in [AI Security 101](ht
 
 This project is in early development.
 
-The initial implementation safely inspects Python pickle files without deserializing untrusted content. The MVP is expanding this into static analysis that can identify security-relevant behavior during deserialization while preserving evidence and explicitly reporting analysis limitations.
+The initial implementation safely inspects Python pickle files without deserializing untrusted content. The MVP is expanding this into static analysis that can identify security-relevant behavior during deserialization while preserving evidence and explicitly reporting analysis limitations. These are development milestones, not the full project scope described below.
 
 Functionality and interfaces should be considered unstable until the first release.
 
