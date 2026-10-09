@@ -43,6 +43,8 @@ PYTHONPATH=src python -m ai_project_scanner path/to/file.pkl
 PYTHONPATH=src python -m ai_project_scanner .
 ```
 
+The scanner also symbolically traces callable invocation (`REDUCE`) for a supported subset of pickle semantics, reporting the callable and statically resolvable arguments, and lists analysis limitations where behavior cannot be determined. Nothing is deserialized.
+
 If no supported files are found, `No supported files found.` is reported.
 
 ## Design
