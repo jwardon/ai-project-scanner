@@ -212,9 +212,9 @@ def test_cli_prints_invocation(tmp_path, capsys):
 
 def test_build_and_newobj_record_limitations(tmp_path):
     r = _scan(tmp_path, b"cos\nsystem\n)\x81.")
-    assert any("NEWOBJ" in lim.description for lim in r.limitations)
+    assert any(lim.operation == "NEWOBJ" for lim in r.limitations)
     r = _scan(tmp_path, b"cos\nsystem\n)\x81}b.")
-    assert any("BUILD" in lim.description for lim in r.limitations)
+    assert any(lim.operation == "BUILD" for lim in r.limitations)
 
 
 def test_results_preserve_ordering(tmp_path):
@@ -223,3 +223,54 @@ def test_results_preserve_ordering(tmp_path):
     assert kinds == ["Invocation", "Limitation"]
     pos = [i for i, e in enumerate(r.results) if type(e).__name__ == "Invocation"][0]
     assert r.results[pos - 1].attributes["opcode"] == "REDUCE"
+
+
+def _limits(r):
+    return {(lim.operation, lim.offset) for lim in r.limitations}
+
+
+def test_limitation_records_operation_and_offset(tmp_path):
+    r = _scan(tmp_path, b"cos\nsystem\n)\x81.")
+    assert ("NEWOBJ", 12) in _limits(r)
+
+
+def test_object_construction_variants_are_limitations(tmp_path):
+    r = _scan(tmp_path, b"cos\nsystem\n)}\x92.")
+    assert ("NEWOBJ_EX", 13) in _limits(r) and not r.errors
+    r = _scan(tmp_path, b"(S'id'\nios\nsystem\n.")
+    assert [lim.operation for lim in r.limitations] == ["INST"]
+    r = _scan(tmp_path, b"(cos\nsystem\nS'id'\no.")
+    assert [lim.operation for lim in r.limitations] == ["OBJ"]
+
+
+def test_persistent_and_extension_resolution_are_limitations(tmp_path):
+    assert [lim.operation for lim in _scan(tmp_path, b"Pabc\n.").limitations] == [
+        "PERSID"
+    ]
+    r = _scan(tmp_path, b"S'abc'\nQ.")
+    assert [lim.operation for lim in r.limitations] == ["BINPERSID"]
+    r = _scan(tmp_path, b"\x82\x01.")
+    assert [lim.operation for lim in r.limitations] == ["EXT1"]
+
+
+def test_findings_and_limitations_coexist_and_analysis_continues(tmp_path):
+    r = _scan(
+        tmp_path,
+        b"cos\nsystem\n)\x81S'cat'\nQ0cbuiltins\neval\n(S'1'\ntR.",
+    )
+    assert [i.callable for i in r.invocations] == ["builtins.eval"]
+    assert {lim.operation for lim in r.limitations} == {"NEWOBJ", "BINPERSID"}
+
+
+def test_supported_pickle_has_no_limitations(tmp_path):
+    r = _scan(tmp_path, pickle.dumps({"a": [1, (2, 3)], "b": {1, 2}}, protocol=4))
+    assert r.ok and not r.limitations
+
+
+def test_cli_does_not_claim_safe_with_limitations(tmp_path, capsys):
+    p = tmp_path / "a.pkl"
+    p.write_bytes(b"Pabc\n.")
+    main([str(p)])
+    out = capsys.readouterr().out
+    assert "limitation: PERSID" in out
+    assert "does not establish that the file is safe" in out

@@ -36,11 +36,15 @@ class Limitation:
     """Behavior the analysis could not fully determine.
 
     A limitation means the result is incomplete at this point; it must not be
-    read as evidence that the artifact is safe.
+    read as evidence that the artifact is safe. It is distinct from a security
+    finding: a finding is behavior the scanner established, a limitation is
+    behavior it could not establish. ``operation`` is the pickle opcode
+    involved and ``offset`` its byte offset.
     """
 
     description: str
     offset: int | None = None
+    operation: str | None = None
 
 
 #: One analysis result. ``ScanResult.results`` keeps them in the order produced.

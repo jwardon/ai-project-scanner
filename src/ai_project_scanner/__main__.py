@@ -46,9 +46,15 @@ def main(argv: list[str] | None = None) -> int:
                 )
             else:
                 print(
-                    f"limitation: {analysis_result.description} "
+                    f"limitation: {analysis_result.operation}: "
+                    f"{analysis_result.description} "
                     f"(byte offset {analysis_result.offset})"
                 )
+        if result.limitations:
+            print(
+                f"analysis incomplete: {len(result.limitations)} limitation(s); "
+                "this result does not establish that the file is safe"
+            )
         for err in result.errors:
             print(f"error: {result.target}: {err}", file=sys.stderr)
     return 0 if ok else 1

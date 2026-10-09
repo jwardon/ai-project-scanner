@@ -29,6 +29,7 @@ class PickleInterpreter:
         self._memo: dict[int, Any] = {}
         self._results: list[AnalysisResult] = []
         self._stopped = False
+        self._op = ""
 
     def step(self, name: str, arg: Any, pos: int) -> list[AnalysisResult]:
         """Interpret one opcode and return the results it produced, in order.
@@ -36,6 +37,7 @@ class PickleInterpreter:
         Interpretation stops permanently once an opcode cannot be modeled.
         """
         self._results = []
+        self._op = name
         if not self._stopped:
             try:
                 self._dispatch(name, arg, pos)
@@ -143,18 +145,63 @@ class PickleInterpreter:
                 args = self._pop(pos)
                 cls = self._pop(pos)
                 self._limit(
-                    "NEWOBJ stack effect modeled; object construction "
-                    "(__new__) is not interpreted",
-                    pos,
+                    "Object construction (__new__) is not interpreted", pos
                 )
                 self._push(_CallResult(cls, args), pos)
+            case "NEWOBJ_EX":
+                kwargs = self._pop(pos)
+                args = self._pop(pos)
+                cls = self._pop(pos)
+                self._limit(
+                    "Object construction (__new__ with keyword arguments) "
+                    "is not interpreted",
+                    pos,
+                )
+                self._push(_CallResult(cls, (args, kwargs)), pos)
             case "BUILD":
                 self._pop(pos)
                 self._limit(
-                    "BUILD stack effect modeled; state application "
-                    "(__setstate__ or attribute update) is not interpreted",
+                    "State application (__setstate__ or attribute update) "
+                    "is not interpreted",
                     pos,
                 )
+            case "INST":
+                module, _, attr = str(arg).partition(" ")
+                items = self._pop_mark(pos)
+                self._limit(
+                    f"Class instantiation of {module}.{attr} is not interpreted",
+                    pos,
+                )
+                self._push(_CallResult(_Global(module, attr), tuple(items)), pos)
+            case "OBJ":
+                items = self._pop_mark(pos)
+                if not items:
+                    self._limit("OBJ has no class on the stack", pos)
+                    raise _Stop
+                self._limit("Class instantiation (OBJ) is not interpreted", pos)
+                self._push(_CallResult(items[0], tuple(items[1:])), pos)
+            case "PERSID":
+                self._limit(
+                    f"Persistent ID {arg!r} is resolved by the application "
+                    "and is not interpreted",
+                    pos,
+                )
+                self._push(_UNKNOWN, pos)
+            case "BINPERSID":
+                self._pop(pos)
+                self._limit(
+                    "Persistent ID is resolved by the application "
+                    "and is not interpreted",
+                    pos,
+                )
+                self._push(_UNKNOWN, pos)
+            case "EXT1" | "EXT2" | "EXT4":
+                self._limit(
+                    f"Extension code {arg} is resolved through an external "
+                    "registry and is not interpreted",
+                    pos,
+                )
+                self._push(_UNKNOWN, pos)
             case _:
                 self._limit(f"Unsupported pickle opcode {name}; analysis halted", pos)
                 raise _Stop
@@ -172,7 +219,7 @@ class PickleInterpreter:
         self._push(_CallResult(func, args), pos)
 
     def _limit(self, description: str, pos: int) -> None:
-        self._results.append(Limitation(description, pos))
+        self._results.append(Limitation(description, pos, self._op))
 
     def _push(self, value: Any, pos: int) -> None:
         if len(self._stack) >= MAX_STACK:
