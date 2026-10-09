@@ -32,15 +32,41 @@ class Invocation:
 
 
 @dataclass
+class Limitation:
+    """Behavior the analysis could not fully determine.
+
+    A limitation means the result is incomplete at this point; it must not be
+    read as evidence that the artifact is safe.
+    """
+
+    description: str
+    offset: int | None = None
+
+
+#: One analysis event. ``ScanResult.events`` keeps them in the order produced.
+Event = Evidence | Invocation | Limitation
+
+
+@dataclass
 class ScanResult:
     """Outcome of scanning one target."""
 
     target: str
-    evidence: list[Evidence] = field(default_factory=list)
+    events: list[Event] = field(default_factory=list)
     errors: list[str] = field(default_factory=list)
-    invocations: list[Invocation] = field(default_factory=list)
-    limitations: list[str] = field(default_factory=list)
 
     @property
     def ok(self) -> bool:
         return not self.errors
+
+    @property
+    def evidence(self) -> list[Evidence]:
+        return [e for e in self.events if isinstance(e, Evidence)]
+
+    @property
+    def invocations(self) -> list[Invocation]:
+        return [e for e in self.events if isinstance(e, Invocation)]
+
+    @property
+    def limitations(self) -> list[Limitation]:
+        return [e for e in self.events if isinstance(e, Limitation)]

@@ -208,3 +208,18 @@ def test_cli_prints_invocation(tmp_path, capsys):
     p.write_bytes(b"cbuiltins\neval\n(S'1+1'\ntR.")
     assert main([str(p)]) == 0
     assert "builtins.eval('1+1',)" in capsys.readouterr().out
+
+
+def test_build_and_newobj_record_limitations(tmp_path):
+    r = _scan(tmp_path, b"cos\nsystem\n)\x81.")
+    assert any("NEWOBJ" in lim.description for lim in r.limitations)
+    r = _scan(tmp_path, b"cos\nsystem\n)\x81}b.")
+    assert any("BUILD" in lim.description for lim in r.limitations)
+
+
+def test_events_preserve_ordering(tmp_path):
+    r = _scan(tmp_path, b"cos\nsystem\n(S'id'\ntRN\x81.")
+    kinds = [type(e).__name__ for e in r.events if type(e).__name__ != "Evidence"]
+    assert kinds == ["Invocation", "Limitation"]
+    pos = [i for i, e in enumerate(r.events) if type(e).__name__ == "Invocation"][0]
+    assert r.events[pos - 1].attributes["opcode"] == "REDUCE"

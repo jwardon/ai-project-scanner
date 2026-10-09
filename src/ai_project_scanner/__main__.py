@@ -6,6 +6,7 @@ import sys
 
 from .discovery import discover_files
 from .pickle_scanner import scan_pickle_file
+from .results import Evidence, Invocation
 
 _MAX_VALUE = 200
 
@@ -28,19 +29,20 @@ def main(argv: list[str] | None = None) -> int:
         result = scan_pickle_file(path)
         ok = ok and result.ok
         print(f"Target: {result.target}")
-        for ev in result.evidence:
-            line = f"{ev.attributes['offset']:>8}  {ev.attributes['opcode']}"
-            if ev.value is not None:
-                line += f"  {_truncate(repr(ev.value))}"
-            print(line)
-        for inv in result.invocations:
-            args = "<unresolved>" if inv.arguments is None else repr(inv.arguments)
-            print(
-                f"{inv.offset:>8}  {inv.operation} -> "
-                f"{inv.callable}{_truncate(args)}"
-            )
-        for lim in result.limitations:
-            print(f"limitation: {lim}")
+        for ev in result.events:
+            if isinstance(ev, Evidence):
+                line = f"{ev.attributes['offset']:>8}  {ev.attributes['opcode']}"
+                if ev.value is not None:
+                    line += f"  {_truncate(repr(ev.value))}"
+                print(line)
+            elif isinstance(ev, Invocation):
+                args = "<unresolved>" if ev.arguments is None else repr(ev.arguments)
+                print(
+                    f"{ev.offset:>8}  {ev.operation} -> "
+                    f"{ev.callable}{_truncate(args)}"
+                )
+            else:
+                print(f"limitation: {ev.description} (byte offset {ev.offset})")
         for err in result.errors:
             print(f"error: {result.target}: {err}", file=sys.stderr)
     return 0 if ok else 1
