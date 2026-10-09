@@ -29,20 +29,26 @@ def main(argv: list[str] | None = None) -> int:
         result = scan_pickle_file(path)
         ok = ok and result.ok
         print(f"Target: {result.target}")
-        for ev in result.results:
-            if isinstance(ev, Evidence):
-                line = f"{ev.attributes['offset']:>8}  {ev.attributes['opcode']}"
-                if ev.value is not None:
-                    line += f"  {_truncate(repr(ev.value))}"
+        for analysis_result in result.results:
+            if isinstance(analysis_result, Evidence):
+                offset = analysis_result.attributes["offset"]
+                opcode = analysis_result.attributes["opcode"]
+                line = f"{offset:>8}  {opcode}"
+                if analysis_result.value is not None:
+                    line += f"  {_truncate(repr(analysis_result.value))}"
                 print(line)
-            elif isinstance(ev, Invocation):
-                args = "<unresolved>" if ev.arguments is None else repr(ev.arguments)
+            elif isinstance(analysis_result, Invocation):
+                arguments = analysis_result.arguments
+                args = "<unresolved>" if arguments is None else repr(arguments)
                 print(
-                    f"{ev.offset:>8}  {ev.operation} -> "
-                    f"{ev.callable}{_truncate(args)}"
+                    f"{analysis_result.offset:>8}  {analysis_result.operation} -> "
+                    f"{analysis_result.callable}{_truncate(args)}"
                 )
             else:
-                print(f"limitation: {ev.description} (byte offset {ev.offset})")
+                print(
+                    f"limitation: {analysis_result.description} "
+                    f"(byte offset {analysis_result.offset})"
+                )
         for err in result.errors:
             print(f"error: {result.target}: {err}", file=sys.stderr)
     return 0 if ok else 1
