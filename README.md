@@ -6,15 +6,23 @@ AI Project Scanner is an open-source security scanner for AI/ML projects, includ
 
 The project explores how security tooling can assess the components of an AI/ML project and provide useful evidence about risks in its software and model supply chains.
 
+## Motivation
+
+AI/ML projects introduce security-relevant components and trust relationships beyond traditional application code, including model artifacts, training and retrieval data, dependencies, and provenance.
+
+AI Project Scanner applies security principles described in [AI Security 101](https://github.com/jwardon/ai-security-101), particularly around [AI supply-chain security](https://github.com/jwardon/ai-security-101/blob/main/5_attacks_ai_supply_chain.md) and [security controls for AI systems](https://github.com/jwardon/ai-security-101/blob/main/8_security_controls_for_ai_systems.md).
+
 ## Status
 
 This project is in early development.
 
-The initial scope, architecture, and MVP are currently being defined. Functionality and interfaces should be considered unstable until the first release.
+The initial implementation safely inspects Python pickle files without deserializing untrusted content. The MVP is expanding this into static analysis that can identify security-relevant behavior during deserialization while preserving evidence and explicitly reporting analysis limitations.
+
+Functionality and interfaces should be considered unstable until the first release.
 
 ## Scope
 
-The project is focused on security analysis of the contents of AI/ML projects, including areas such as:
+The project is focused on security analysis of the contents of AI/ML projects, including:
 
 - source code and Jupyter notebooks
 - software dependencies
@@ -22,15 +30,21 @@ The project is focused on security analysis of the contents of AI/ML projects, i
 - configuration and metadata
 - provenance and lineage information
 
+The project favors a small number of well-supported analyses over superficial coverage. Scanned content is treated as untrusted, and analysis should distinguish what can be established from what cannot.
+
 The project is not intended to be a general-purpose network or live AI infrastructure vulnerability scanner.
 
 ## Usage
 
 Inspect a pickle file's opcodes without deserializing it:
 
-```
+```text
 PYTHONPATH=src python -m ai_project_scanner path/to/file.pkl
 ```
+
+## Design
+
+Significant architectural decisions are documented in [`docs/adr`](docs/adr/). Project planning and the implementation roadmap are tracked in [GitHub Issues](https://github.com/jwardon/ai-project-scanner/issues).
 
 ## License
 
