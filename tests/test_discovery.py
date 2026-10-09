@@ -1,11 +1,7 @@
 import pickle
-import subprocess
-import sys
 
 from ai_project_scanner.__main__ import main
 from ai_project_scanner.discovery import discover_files
-
-from test_pickle_scanner import SRC
 
 
 def _pkl(path, obj=1):

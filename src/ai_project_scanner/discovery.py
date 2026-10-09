@@ -5,12 +5,12 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-PICKLE_SUFFIXES = frozenset({".pkl", ".pickle"})
+SUPPORTED_SUFFIXES = frozenset({".pkl", ".pickle"})
 
 
 def is_supported(path: str | os.PathLike) -> bool:
     """Return True if the path has a supported file type (currently pickle)."""
-    return Path(path).suffix.lower() in PICKLE_SUFFIXES
+    return Path(path).suffix.lower() in SUPPORTED_SUFFIXES
 
 
 def discover_files(target: str | os.PathLike) -> list[Path]:
