@@ -217,9 +217,9 @@ def test_build_and_newobj_record_limitations(tmp_path):
     assert any("BUILD" in lim.description for lim in r.limitations)
 
 
-def test_events_preserve_ordering(tmp_path):
+def test_results_preserve_ordering(tmp_path):
     r = _scan(tmp_path, b"cos\nsystem\n(S'id'\ntRN\x81.")
-    kinds = [type(e).__name__ for e in r.events if type(e).__name__ != "Evidence"]
+    kinds = [type(e).__name__ for e in r.results if type(e).__name__ != "Evidence"]
     assert kinds == ["Invocation", "Limitation"]
-    pos = [i for i, e in enumerate(r.events) if type(e).__name__ == "Invocation"][0]
-    assert r.events[pos - 1].attributes["opcode"] == "REDUCE"
+    pos = [i for i, e in enumerate(r.results) if type(e).__name__ == "Invocation"][0]
+    assert r.results[pos - 1].attributes["opcode"] == "REDUCE"

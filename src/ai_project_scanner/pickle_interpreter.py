@@ -12,7 +12,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-from .results import Event, Invocation, Limitation
+from .results import AnalysisResult, Invocation, Limitation
 
 # Intentional resource-exhaustion guardrails for symbolic analysis, not pickle
 # semantic limits. They are initial defaults and may be revisited with
@@ -27,21 +27,21 @@ class PickleInterpreter:
     def __init__(self) -> None:
         self._stack: list[Any] = []
         self._memo: dict[int, Any] = {}
-        self._events: list[Event] = []
+        self._results: list[AnalysisResult] = []
         self._stopped = False
 
-    def step(self, name: str, arg: Any, pos: int) -> list[Event]:
-        """Interpret one opcode and return the events it produced, in order.
+    def step(self, name: str, arg: Any, pos: int) -> list[AnalysisResult]:
+        """Interpret one opcode and return the results it produced, in order.
 
         Interpretation stops permanently once an opcode cannot be modeled.
         """
-        self._events = []
+        self._results = []
         if not self._stopped:
             try:
                 self._dispatch(name, arg, pos)
             except _Stop:
                 self._stopped = True
-        return self._events
+        return self._results
 
     def _dispatch(self, name: str, arg: Any, pos: int) -> None:
         match name:
@@ -162,7 +162,7 @@ class PickleInterpreter:
     def _reduce(self, func: Any, args: Any, op: str, pos: int) -> None:
         if isinstance(func, _Global):
             static_args = args if isinstance(args, tuple) else None
-            self._events.append(Invocation(func.qualified, static_args, op, pos))
+            self._results.append(Invocation(func.qualified, static_args, op, pos))
             if static_args is None:
                 self._limit(
                     f"Arguments to {func.qualified} are not a static tuple", pos
@@ -172,7 +172,7 @@ class PickleInterpreter:
         self._push(_CallResult(func, args), pos)
 
     def _limit(self, description: str, pos: int) -> None:
-        self._events.append(Limitation(description, pos))
+        self._results.append(Limitation(description, pos))
 
     def _push(self, value: Any, pos: int) -> None:
         if len(self._stack) >= MAX_STACK:

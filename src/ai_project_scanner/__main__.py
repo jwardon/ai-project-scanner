@@ -29,7 +29,7 @@ def main(argv: list[str] | None = None) -> int:
         result = scan_pickle_file(path)
         ok = ok and result.ok
         print(f"Target: {result.target}")
-        for ev in result.events:
+        for ev in result.results:
             if isinstance(ev, Evidence):
                 line = f"{ev.attributes['offset']:>8}  {ev.attributes['opcode']}"
                 if ev.value is not None:

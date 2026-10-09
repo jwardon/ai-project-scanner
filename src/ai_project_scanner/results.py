@@ -43,8 +43,8 @@ class Limitation:
     offset: int | None = None
 
 
-#: One analysis event. ``ScanResult.events`` keeps them in the order produced.
-Event = Evidence | Invocation | Limitation
+#: One analysis result. ``ScanResult.results`` keeps them in the order produced.
+AnalysisResult = Evidence | Invocation | Limitation
 
 
 @dataclass
@@ -52,7 +52,7 @@ class ScanResult:
     """Outcome of scanning one target."""
 
     target: str
-    events: list[Event] = field(default_factory=list)
+    results: list[AnalysisResult] = field(default_factory=list)
     errors: list[str] = field(default_factory=list)
 
     @property
@@ -61,12 +61,12 @@ class ScanResult:
 
     @property
     def evidence(self) -> list[Evidence]:
-        return [e for e in self.events if isinstance(e, Evidence)]
+        return [e for e in self.results if isinstance(e, Evidence)]
 
     @property
     def invocations(self) -> list[Invocation]:
-        return [e for e in self.events if isinstance(e, Invocation)]
+        return [e for e in self.results if isinstance(e, Invocation)]
 
     @property
     def limitations(self) -> list[Limitation]:
-        return [e for e in self.events if isinstance(e, Limitation)]
+        return [e for e in self.results if isinstance(e, Limitation)]
