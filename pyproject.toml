@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "ai-project-scanner"
 version = "0.0.0"
 description = "Security scanner for AI/ML projects"
-requires-python = ">=3.9"
+requires-python = ">=3.12"
 license = { text = "Apache-2.0" }
 
 [tool.setuptools.packages.find]
