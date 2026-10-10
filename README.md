@@ -36,32 +36,16 @@ The project is not intended to be a general-purpose network or live AI infrastru
 
 ## Usage
 
-Inspect a pickle file's opcodes without deserializing it. The target may be a file or a directory, which is searched recursively for `.pkl` and `.pickle` files:
+Statically scan pickle files without deserializing them. The target may be a file or a directory, which is searched recursively for `.pkl` and `.pickle` files:
 
 ```text
-PYTHONPATH=src python -m ai_project_scanner path/to/file.pkl
-PYTHONPATH=src python -m ai_project_scanner .
+pip install .
+scan path/to/file.pkl
+scan .
+scan --help
 ```
 
-The scanner also symbolically traces callable invocation (`REDUCE`) for a supported subset of pickle semantics, reporting the callable and statically resolvable arguments, and lists analysis limitations where behavior cannot be determined. Nothing is deserialized.
-
-The target may be omitted. It is then resolved from, in order: `ai-project-scanner.toml` in the current directory, `[tool.ai-project-scanner]` in `pyproject.toml`, then `.`. The first source found is used on its own; the two are never merged. Relative configured paths are resolved against the directory containing the configuration file.
-
-```toml
-# ai-project-scanner.toml
-[scan]
-path = "./models"
-```
-
-```toml
-# pyproject.toml
-[tool.ai-project-scanner.scan]
-path = "./models"
-```
-
-Invalid configuration is reported as a `configuration error` (exit code 2).
-
-If no supported files are found, `No supported files found.` is reported.
+The target may be omitted, in which case it is resolved from configuration. See the [usage guide](docs/usage.md) for details on configuration, output, and exit statuses.
 
 ## Design
 

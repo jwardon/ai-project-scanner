@@ -9,6 +9,9 @@ description = "Security scanner for AI/ML projects"
 requires-python = ">=3.12"
 license = { text = "Apache-2.0" }
 
+[project.scripts]
+scan = "ai_project_scanner.cli:main"
+
 [tool.setuptools.packages.find]
 where = ["src"]
 
