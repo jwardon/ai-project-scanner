@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-
 # Values are the stable rule identifier and the capability established by a call.
 PICKLE_CAPABILITY_RULES: dict[str, tuple[str, str]] = {
     "builtins.eval": ("pickle.dynamic_code_execution", "dynamic code execution"),

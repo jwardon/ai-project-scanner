@@ -56,7 +56,9 @@ def scan_pickle_file(path: str | os.PathLike) -> ScanResult:
                                             f"Resolved invocation of "
                                             f"{analysis_result.callable}"
                                         ),
-                                        location=f"byte offset {analysis_result.offset}",
+                                        location=(
+                                            f"byte offset {analysis_result.offset}"
+                                        ),
                                         value=analysis_result.arguments,
                                         attributes={
                                             "callable": analysis_result.callable,

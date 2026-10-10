@@ -45,10 +45,7 @@ def main(argv: list[str] | None = None) -> int:
                     f"{analysis_result.callable}{_truncate(args)}"
                 )
             elif isinstance(analysis_result, Finding):
-                print(
-                    f"finding: {analysis_result.rule_id}: "
-                    f"{analysis_result.message}"
-                )
+                print(f"finding: {analysis_result.rule_id}: {analysis_result.message}")
             else:
                 print(
                     f"limitation: {analysis_result.operation}: "

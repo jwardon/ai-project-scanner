@@ -120,15 +120,31 @@ def _global_reduce(module, name, arguments=b""):
     ("module", "name", "arguments", "rule_id"),
     [
         ("os", "system", b"S'id'\n", "pickle.command_execution"),
-        ("builtins", "eval", b"S'not parsed or executed'\n",
-         "pickle.dynamic_code_execution"),
-        ("builtins", "exec", b"S'not parsed or executed'\n",
-         "pickle.dynamic_code_execution"),
-        ("importlib", "import_module", b"S'example_module'\n",
-         "pickle.dynamic_loading"),
+        (
+            "builtins",
+            "eval",
+            b"S'not parsed or executed'\n",
+            "pickle.dynamic_code_execution",
+        ),
+        (
+            "builtins",
+            "exec",
+            b"S'not parsed or executed'\n",
+            "pickle.dynamic_code_execution",
+        ),
+        (
+            "importlib",
+            "import_module",
+            b"S'example_module'\n",
+            "pickle.dynamic_loading",
+        ),
         ("builtins", "open", b"S'/tmp/example'\n", "pickle.filesystem_access"),
-        ("socket", "create_connection", b"S'example.invalid'\n",
-         "pickle.network_access"),
+        (
+            "socket",
+            "create_connection",
+            b"S'example.invalid'\n",
+            "pickle.network_access",
+        ),
     ],
 )
 def test_capability_invocations_produce_findings(
