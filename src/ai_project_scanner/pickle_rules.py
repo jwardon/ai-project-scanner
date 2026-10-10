@@ -11,107 +11,118 @@ class PickleCapabilityRule:
     capability: str
 
 
-# Values are the stable rule identifier and the capability established by a call.
 PICKLE_CAPABILITY_RULES: dict[str, PickleCapabilityRule] = {
     "builtins.eval": PickleCapabilityRule(
-        "pickle.dynamic_code_execution", "dynamic code execution"
+        rule_id="pickle.dynamic_code_execution",
+        capability="dynamic code execution",
     ),
     "builtins.exec": PickleCapabilityRule(
-        "pickle.dynamic_code_execution", "dynamic code execution"
+        rule_id="pickle.dynamic_code_execution",
+        capability="dynamic code execution",
     ),
-    "os.system": PickleCapabilityRule("pickle.command_execution", "command execution"),
+    "os.system": PickleCapabilityRule(
+        rule_id="pickle.command_execution", capability="command execution"
+    ),
     "posix.system": PickleCapabilityRule(
-        "pickle.command_execution", "command execution"
+        rule_id="pickle.command_execution", capability="command execution"
     ),
-    "nt.system": PickleCapabilityRule("pickle.command_execution", "command execution"),
-    "os.popen": PickleCapabilityRule("pickle.command_execution", "command execution"),
+    "nt.system": PickleCapabilityRule(
+        rule_id="pickle.command_execution", capability="command execution"
+    ),
+    "os.popen": PickleCapabilityRule(
+        rule_id="pickle.command_execution", capability="command execution"
+    ),
     "subprocess.Popen": PickleCapabilityRule(
-        "pickle.command_execution", "process execution"
+        rule_id="pickle.command_execution", capability="process execution"
     ),
     "subprocess.call": PickleCapabilityRule(
-        "pickle.command_execution", "process execution"
+        rule_id="pickle.command_execution", capability="process execution"
     ),
     "subprocess.check_call": PickleCapabilityRule(
-        "pickle.command_execution", "process execution"
+        rule_id="pickle.command_execution", capability="process execution"
     ),
     "subprocess.check_output": PickleCapabilityRule(
-        "pickle.command_execution", "process execution"
+        rule_id="pickle.command_execution", capability="process execution"
     ),
     "subprocess.run": PickleCapabilityRule(
-        "pickle.command_execution", "process execution"
+        rule_id="pickle.command_execution", capability="process execution"
     ),
     "builtins.__import__": PickleCapabilityRule(
-        "pickle.dynamic_loading", "dynamic import"
+        rule_id="pickle.dynamic_loading", capability="dynamic import"
     ),
     "importlib.import_module": PickleCapabilityRule(
-        "pickle.dynamic_loading", "dynamic import"
+        rule_id="pickle.dynamic_loading", capability="dynamic import"
     ),
     "runpy.run_module": PickleCapabilityRule(
-        "pickle.dynamic_loading", "dynamic module loading"
+        rule_id="pickle.dynamic_loading", capability="dynamic module loading"
     ),
     "runpy.run_path": PickleCapabilityRule(
-        "pickle.dynamic_loading", "dynamic code loading"
+        rule_id="pickle.dynamic_loading", capability="dynamic code loading"
     ),
     "builtins.open": PickleCapabilityRule(
-        "pickle.filesystem_access", "filesystem access"
+        rule_id="pickle.filesystem_access", capability="filesystem access"
     ),
-    "io.open": PickleCapabilityRule("pickle.filesystem_access", "filesystem access"),
-    "os.open": PickleCapabilityRule("pickle.filesystem_access", "filesystem access"),
+    "io.open": PickleCapabilityRule(
+        rule_id="pickle.filesystem_access", capability="filesystem access"
+    ),
+    "os.open": PickleCapabilityRule(
+        rule_id="pickle.filesystem_access", capability="filesystem access"
+    ),
     "os.remove": PickleCapabilityRule(
-        "pickle.filesystem_access", "filesystem mutation"
+        rule_id="pickle.filesystem_access", capability="filesystem mutation"
     ),
     "os.unlink": PickleCapabilityRule(
-        "pickle.filesystem_access", "filesystem mutation"
+        rule_id="pickle.filesystem_access", capability="filesystem mutation"
     ),
     "os.rename": PickleCapabilityRule(
-        "pickle.filesystem_access", "filesystem mutation"
+        rule_id="pickle.filesystem_access", capability="filesystem mutation"
     ),
     "os.replace": PickleCapabilityRule(
-        "pickle.filesystem_access", "filesystem mutation"
+        rule_id="pickle.filesystem_access", capability="filesystem mutation"
     ),
     "pathlib.Path.open": PickleCapabilityRule(
-        "pickle.filesystem_access", "filesystem access"
+        rule_id="pickle.filesystem_access", capability="filesystem access"
     ),
     "pathlib.Path.read_bytes": PickleCapabilityRule(
-        "pickle.filesystem_access", "filesystem access"
+        rule_id="pickle.filesystem_access", capability="filesystem access"
     ),
     "pathlib.Path.read_text": PickleCapabilityRule(
-        "pickle.filesystem_access", "filesystem access"
+        rule_id="pickle.filesystem_access", capability="filesystem access"
     ),
     "pathlib.Path.write_bytes": PickleCapabilityRule(
-        "pickle.filesystem_access", "filesystem mutation"
+        rule_id="pickle.filesystem_access", capability="filesystem mutation"
     ),
     "pathlib.Path.write_text": PickleCapabilityRule(
-        "pickle.filesystem_access", "filesystem mutation"
+        rule_id="pickle.filesystem_access", capability="filesystem mutation"
     ),
     "pathlib.Path.unlink": PickleCapabilityRule(
-        "pickle.filesystem_access", "filesystem mutation"
+        rule_id="pickle.filesystem_access", capability="filesystem mutation"
     ),
     "shutil.copy": PickleCapabilityRule(
-        "pickle.filesystem_access", "filesystem mutation"
+        rule_id="pickle.filesystem_access", capability="filesystem mutation"
     ),
     "shutil.move": PickleCapabilityRule(
-        "pickle.filesystem_access", "filesystem mutation"
+        rule_id="pickle.filesystem_access", capability="filesystem mutation"
     ),
     "shutil.rmtree": PickleCapabilityRule(
-        "pickle.filesystem_access", "filesystem mutation"
+        rule_id="pickle.filesystem_access", capability="filesystem mutation"
     ),
     "socket.create_connection": PickleCapabilityRule(
-        "pickle.network_access", "network access"
+        rule_id="pickle.network_access", capability="network access"
     ),
     "urllib.request.urlopen": PickleCapabilityRule(
-        "pickle.network_access", "network access"
+        rule_id="pickle.network_access", capability="network access"
     ),
     "urllib.request.urlretrieve": PickleCapabilityRule(
-        "pickle.network_access", "network access"
+        rule_id="pickle.network_access", capability="network access"
     ),
     "http.client.HTTPConnection.connect": PickleCapabilityRule(
-        "pickle.network_access", "network access"
+        rule_id="pickle.network_access", capability="network access"
     ),
     "smtplib.SMTP.connect": PickleCapabilityRule(
-        "pickle.network_access", "network access"
+        rule_id="pickle.network_access", capability="network access"
     ),
     "ftplib.FTP.connect": PickleCapabilityRule(
-        "pickle.network_access", "network access"
+        rule_id="pickle.network_access", capability="network access"
     ),
 }
