@@ -253,7 +253,7 @@ def test_persistent_and_extension_resolution_are_limitations(tmp_path):
     assert [lim.operation for lim in r.limitations] == ["EXT1"]
 
 
-def test_findings_and_limitations_coexist_and_analysis_continues(tmp_path):
+def test_invocations_and_limitations_coexist_and_analysis_continues(tmp_path):
     r = _scan(
         tmp_path,
         b"cos\nsystem\n)\x81S'cat'\nQ0cbuiltins\neval\n(S'1'\ntR.",
@@ -274,3 +274,12 @@ def test_cli_does_not_claim_safe_with_limitations(tmp_path, capsys):
     out = capsys.readouterr().out
     assert "limitation: PERSID" in out
     assert "does not establish that the file is safe" in out
+
+
+def test_unresolved_value_in_arguments_is_not_reported_as_resolved(tmp_path):
+    r = _scan(tmp_path, b"cos\nsystem\n(S'abc'\nQtR.")
+    assert [i.callable for i in r.invocations] == ["os.system"]
+    assert r.invocations[0].arguments is None
+    assert {lim.operation for lim in r.limitations} == {"BINPERSID", "REDUCE"}
+    r = _scan(tmp_path, b"cos\nsystem\n((S'abc'\nQtl\x85R.")
+    assert r.invocations[0].arguments is None

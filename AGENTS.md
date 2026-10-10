@@ -14,6 +14,7 @@ The project favors a small number of well-supported analyses over superficial co
 - Avoid unrelated refactoring or feature expansion.
 - Add dependencies only when they provide clear value and prefer the standard library when it is a reasonable fit.
 - Keep analyzer-specific implementation details separate from generic scanner concepts where practical.
+- Prefer locally understandable names that make the state or concept being manipulated clear without requiring extensive surrounding context.
 
 ## Security
 
