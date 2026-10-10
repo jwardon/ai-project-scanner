@@ -21,36 +21,37 @@ class ScannerConfig:
     scan_path: str | None = None
 
 
-def _read_toml(file: Path) -> dict[str, Any]:
+def _read_toml(config_file: Path) -> dict[str, Any]:
     try:
-        with file.open("rb") as f:
-            return tomllib.load(f)
+        with config_file.open("rb") as config_stream:
+            return tomllib.load(config_stream)
     except (OSError, tomllib.TOMLDecodeError, UnicodeDecodeError) as err:
-        raise ConfigError(f"{file}: cannot read configuration: {err}") from err
+        raise ConfigError(f"{config_file}: cannot read configuration: {err}") from err
 
 
-def _parse(table: Any, file: Path, location: str) -> ScannerConfig:
-    if not isinstance(table, dict):
-        raise ConfigError(f"{file}: {location} must be a table")
-    unknown = sorted(set(table) - {"scan"})
-    if unknown:
+def _parse_config_table(config_table: Any, config_file: Path) -> ScannerConfig:
+    if not isinstance(config_table, dict):
+        raise ConfigError(f"{config_file}: scanner configuration must be a table")
+    unknown_config_keys = sorted(set(config_table) - {"scan"})
+    if unknown_config_keys:
         raise ConfigError(
-            f"{file}: unknown setting(s) in {location}: {', '.join(unknown)}"
+            f"{config_file}: unknown scanner setting(s): "
+            f"{', '.join(unknown_config_keys)}"
         )
-    scan = table.get("scan", {})
-    if not isinstance(scan, dict):
-        raise ConfigError(f"{file}: {location}.scan must be a table")
-    unknown = sorted(set(scan) - {"path"})
-    if unknown:
+    scan_table = config_table.get("scan", {})
+    if not isinstance(scan_table, dict):
+        raise ConfigError(f"{config_file}: scan must be a table")
+    unknown_scan_keys = sorted(set(scan_table) - {"path"})
+    if unknown_scan_keys:
         raise ConfigError(
-            f"{file}: unknown setting(s) in {location}.scan: {', '.join(unknown)}"
+            f"{config_file}: unknown scan setting(s): {', '.join(unknown_scan_keys)}"
         )
-    path = scan.get("path")
-    if path is None:
+    scan_path = scan_table.get("path")
+    if scan_path is None:
         return ScannerConfig()
-    if not isinstance(path, str) or not path.strip():
-        raise ConfigError(f"{file}: {location}.scan.path must be a non-empty string")
-    return ScannerConfig(scan_path=path)
+    if not isinstance(scan_path, str) or not scan_path.strip():
+        raise ConfigError(f"{config_file}: scan.path must be a non-empty string")
+    return ScannerConfig(scan_path=scan_path)
 
 
 def load_config(directory: str | Path = ".") -> ScannerConfig:
@@ -60,24 +61,26 @@ def load_config(directory: str | Path = ".") -> ScannerConfig:
     sources are never merged. Relative configured paths are resolved against
     ``directory``.
     """
-    base = Path(directory)
-    config_file = base / CONFIG_FILE_NAME
-    pyproject_file = base / PYPROJECT_FILE_NAME
+    config_directory = Path(directory)
+    config_file = config_directory / CONFIG_FILE_NAME
+    pyproject_file = config_directory / PYPROJECT_FILE_NAME
     if config_file.is_file():
-        config = _parse(_read_toml(config_file), config_file, "the file")
-        source = config_file
+        config = _parse_config_table(_read_toml(config_file), config_file)
+        config_source_file = config_file
     elif pyproject_file.is_file():
-        tool = _read_toml(pyproject_file).get("tool", {})
-        if not isinstance(tool, dict) or "ai-project-scanner" not in tool:
+        tool_table = _read_toml(pyproject_file).get("tool", {})
+        if not isinstance(tool_table, dict) or "ai-project-scanner" not in tool_table:
             return ScannerConfig()
-        table = tool["ai-project-scanner"]
-        config = _parse(table, pyproject_file, "[tool.ai-project-scanner]")
-        source = pyproject_file
+        scanner_table = tool_table["ai-project-scanner"]
+        config = _parse_config_table(scanner_table, pyproject_file)
+        config_source_file = pyproject_file
     else:
         return ScannerConfig()
     if config.scan_path is None:
         return config
-    return ScannerConfig(scan_path=str(source.parent / config.scan_path))
+    return ScannerConfig(
+        scan_path=str(config_source_file.parent / config.scan_path)
+    )
 
 
 def resolve_scan_target(explicit: str | None, directory: str | Path = ".") -> str:
