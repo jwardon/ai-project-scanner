@@ -55,6 +55,7 @@ def test_missing_file(tmp_path):
 class _Payload:
     def __reduce__(self):
         import os
+
         return (os.system, ("touch " + str(MARKER),))
 
 
@@ -99,12 +100,15 @@ def test_module_invocation(tmp_path):
     p.write_bytes(b"\x80\x04N.")
     r = subprocess.run(
         [sys.executable, "-m", "ai_project_scanner", str(p)],
-        capture_output=True, text=True, env={"PYTHONPATH": SRC},
+        capture_output=True,
+        text=True,
+        env={"PYTHONPATH": SRC},
     )
     assert r.returncode == 0 and "NONE" in r.stdout and "Traceback" not in r.stderr
 
 
 # --- symbolic invocation tracing ---------------------------------------
+
 
 def _scan(tmp_path, data):
     p = tmp_path / "x.pkl"
@@ -221,8 +225,10 @@ def test_global_reduce_traced_with_arguments(tmp_path):
 
 
 def test_stack_global_reduce_traced(tmp_path):
-    data = (b"\x80\x04\x8c\x08builtins\x94\x8c\x04eval\x94\x93\x94"
-            b"\x8c\x031+1\x94\x85\x94R\x94.")
+    data = (
+        b"\x80\x04\x8c\x08builtins\x94\x8c\x04eval\x94\x93\x94"
+        b"\x8c\x031+1\x94\x85\x94R\x94."
+    )
     r = _scan(tmp_path, data)
     [inv] = r.invocations
     assert inv.callable == "builtins.eval" and inv.arguments == ("1+1",)
@@ -249,8 +255,11 @@ def test_memoized_callable_traced(tmp_path):
 
 
 def test_memoized_callable_binary_and_memoize(tmp_path):
-    data = (b"\x80\x04\x8c\x02os\x94\x8c\x06system\x94\x93\x94" b"0h\x02"
-            b"\x8c\x02id\x94\x85\x94R.")
+    data = (
+        b"\x80\x04\x8c\x02os\x94\x8c\x06system\x94\x93\x94"
+        b"0h\x02"
+        b"\x8c\x02id\x94\x85\x94R."
+    )
     r = _scan(tmp_path, data)
     [inv] = r.invocations
     assert inv.callable == "os.system" and inv.arguments == ("id",)
@@ -267,7 +276,7 @@ def test_stack_manipulation_dup_pop_mark(tmp_path):
 
 
 def test_arguments_through_containers_and_memo(tmp_path):
-    data = (b"cbuiltins\ngetattr\n(]p0\nS'x'\na(dS'k'\nI5\nsg0\nS'y'\ntR.")
+    data = b"cbuiltins\ngetattr\n(]p0\nS'x'\na(dS'k'\nI5\nsg0\nS'y'\ntR."
     r = _scan(tmp_path, data)
     [inv] = r.invocations
     assert inv.callable == "builtins.getattr"
@@ -277,7 +286,7 @@ def test_arguments_through_containers_and_memo(tmp_path):
 
 
 def test_nested_invocation_both_traced(tmp_path):
-    data = (b"cbuiltins\neval\n(cbuiltins\nstr\n(S'a'\ntRtR.")
+    data = b"cbuiltins\neval\n(cbuiltins\nstr\n(S'a'\ntRtR."
     r = _scan(tmp_path, data)
     assert [i.callable for i in r.invocations] == ["builtins.str", "builtins.eval"]
 

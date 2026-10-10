@@ -78,9 +78,7 @@ def load_config(directory: str | Path = ".") -> ScannerConfig:
         return ScannerConfig()
     if config.scan_path is None:
         return config
-    return ScannerConfig(
-        scan_path=str(config_source_file.parent / config.scan_path)
-    )
+    return ScannerConfig(scan_path=str(config_source_file.parent / config.scan_path))
 
 
 def resolve_scan_target(explicit: str | None, directory: str | Path = ".") -> str:
