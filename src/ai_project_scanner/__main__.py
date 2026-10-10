@@ -1,9 +1,10 @@
-"""Usage: python -m ai_project_scanner PATH"""
+"""Usage: python -m ai_project_scanner [PATH]"""
 
 from __future__ import annotations
 
 import sys
 
+from .config import ConfigError, resolve_scan_target
 from .discovery import discover_files
 from .pickle_scanner import scan_pickle_file
 from .results import Evidence, Finding, Invocation
@@ -17,10 +18,15 @@ def _truncate(text: str) -> str:
 
 def main(argv: list[str] | None = None) -> int:
     args = sys.argv[1:] if argv is None else argv
-    if len(args) != 1:
-        print("usage: python -m ai_project_scanner PATH", file=sys.stderr)
+    if len(args) > 1:
+        print("usage: python -m ai_project_scanner [PATH]", file=sys.stderr)
         return 2
-    files = discover_files(args[0])
+    try:
+        target = resolve_scan_target(args[0] if args else None)
+    except ConfigError as err:
+        print(f"configuration error: {err}", file=sys.stderr)
+        return 2
+    files = discover_files(target)
     if not files:
         print("No supported files found.")
         return 0
