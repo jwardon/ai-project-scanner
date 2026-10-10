@@ -397,3 +397,17 @@ def test_unresolved_value_in_arguments_is_not_reported_as_resolved(tmp_path):
     assert {lim.operation for lim in r.limitations} == {"BINPERSID", "REDUCE"}
     r = _scan(tmp_path, b"cos\nsystem\n((S'abc'\nQtl\x85R.")
     assert r.invocations[0].arguments is None
+
+
+def test_internal_defect_is_not_reported_as_malformed_pickle(tmp_path, monkeypatch):
+    path = tmp_path / "ok.pkl"
+    path.write_bytes(pickle.dumps(1))
+
+    def broken_step(self, *args):
+        raise RuntimeError("scanner defect")
+
+    monkeypatch.setattr(
+        "ai_project_scanner.pickle_scanner.PickleInterpreter.step", broken_step
+    )
+    with pytest.raises(RuntimeError, match="scanner defect"):
+        scan_pickle_file(path)
