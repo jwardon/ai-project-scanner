@@ -187,6 +187,31 @@ def test_global_reference_without_invocation_is_not_a_finding(tmp_path):
     assert result.ok and not result.invocations and not result.findings
 
 
+def test_ordinary_pickle_does_not_produce_findings(tmp_path):
+    data = pickle.dumps({"name": "model", "weights": [0.1, 0.2]}, protocol=4)
+
+    result = _scan(tmp_path, data)
+
+    assert result.ok and not result.findings
+
+
+def test_finding_is_preserved_when_arguments_are_unresolved(tmp_path):
+    result = _scan(tmp_path, b"cbuiltins\neval\n(S'code'\nQtR.")
+
+    [invocation] = result.invocations
+    [finding] = result.findings
+    assert invocation.callable == "builtins.eval"
+    assert invocation.arguments is None
+    assert finding.rule_id == "pickle.dynamic_code_execution"
+    assert finding.evidence[0].value is None
+    assert finding.evidence[0].attributes["arguments"] is None
+    assert [limitation.operation for limitation in result.limitations] == [
+        "BINPERSID",
+        "REDUCE",
+    ]
+    assert [limitation.offset for limitation in result.limitations] == [24, 26]
+
+
 def test_global_reduce_traced_with_arguments(tmp_path):
     r = _scan(tmp_path, b"cbuiltins\neval\n(S'1+1'\ntR.")
     assert r.ok and not r.limitations

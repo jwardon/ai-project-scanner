@@ -10,7 +10,6 @@ PICKLE_CAPABILITY_RULES: dict[str, tuple[str, str]] = {
     "posix.system": ("pickle.command_execution", "command execution"),
     "nt.system": ("pickle.command_execution", "command execution"),
     "os.popen": ("pickle.command_execution", "command execution"),
-    "posix.popen": ("pickle.command_execution", "command execution"),
     "subprocess.Popen": ("pickle.command_execution", "process execution"),
     "subprocess.call": ("pickle.command_execution", "process execution"),
     "subprocess.check_call": ("pickle.command_execution", "process execution"),
