@@ -41,33 +41,29 @@ def scan_pickle_file(path: str | os.PathLike) -> ScanResult:
                 if isinstance(analysis_result, Invocation):
                     rule = PICKLE_CAPABILITY_RULES.get(analysis_result.callable)
                     if rule is not None:
-                        rule_id, capability = rule
+                        evidence = Evidence(
+                            description=(
+                                f"Resolved invocation of {analysis_result.callable}"
+                            ),
+                            location=f"byte offset {analysis_result.offset}",
+                            value=analysis_result.arguments,
+                            attributes={
+                                "callable": analysis_result.callable,
+                                "arguments": analysis_result.arguments,
+                                "opcode": analysis_result.operation,
+                                "offset": analysis_result.offset,
+                            },
+                        )
                         result.results.append(
                             Finding(
-                                rule_id=rule_id,
+                                rule_id=rule.rule_id,
                                 artifact_path=result.target,
                                 message=(
                                     f"Pickle invokes {analysis_result.callable}, "
-                                    f"establishing {capability} during deserialization."
+                                    f"establishing {rule.capability} "
+                                    "during deserialization."
                                 ),
-                                evidence=[
-                                    Evidence(
-                                        description=(
-                                            f"Resolved invocation of "
-                                            f"{analysis_result.callable}"
-                                        ),
-                                        location=(
-                                            f"byte offset {analysis_result.offset}"
-                                        ),
-                                        value=analysis_result.arguments,
-                                        attributes={
-                                            "callable": analysis_result.callable,
-                                            "arguments": analysis_result.arguments,
-                                            "opcode": analysis_result.operation,
-                                            "offset": analysis_result.offset,
-                                        },
-                                    )
-                                ],
+                                evidence=[evidence],
                             )
                         )
     except Exception as exc:  # malformed input must yield a controlled error
