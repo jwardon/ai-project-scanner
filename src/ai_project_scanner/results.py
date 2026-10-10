@@ -32,6 +32,16 @@ class Invocation:
 
 
 @dataclass
+class Finding:
+    """An established security-relevant capability and its supporting evidence."""
+
+    rule_id: str
+    artifact_path: str
+    message: str
+    evidence: list[Evidence] = field(default_factory=list)
+
+
+@dataclass
 class Limitation:
     """Behavior the analysis could not fully determine.
 
@@ -48,7 +58,7 @@ class Limitation:
 
 
 #: One analysis result. ``ScanResult.results`` keeps them in the order produced.
-AnalysisResult = Evidence | Invocation | Limitation
+AnalysisResult = Evidence | Invocation | Finding | Limitation
 
 
 @dataclass
@@ -70,6 +80,10 @@ class ScanResult:
     @property
     def invocations(self) -> list[Invocation]:
         return [e for e in self.results if isinstance(e, Invocation)]
+
+    @property
+    def findings(self) -> list[Finding]:
+        return [e for e in self.results if isinstance(e, Finding)]
 
     @property
     def limitations(self) -> list[Limitation]:

@@ -1,6 +1,13 @@
 """AI Project Scanner."""
 
 from .pickle_scanner import scan_pickle_file
-from .results import Evidence, Invocation, Limitation, ScanResult
+from .results import Evidence, Finding, Invocation, Limitation, ScanResult
 
-__all__ = ["Evidence", "Invocation", "Limitation", "ScanResult", "scan_pickle_file"]
+__all__ = [
+    "Evidence",
+    "Finding",
+    "Invocation",
+    "Limitation",
+    "ScanResult",
+    "scan_pickle_file",
+]
