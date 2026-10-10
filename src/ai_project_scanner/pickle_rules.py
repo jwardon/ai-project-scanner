@@ -1,0 +1,46 @@
+"""Curated security-relevant callables recognized by pickle analysis."""
+
+from __future__ import annotations
+
+
+# Values are the stable rule identifier and the capability established by a call.
+PICKLE_CAPABILITY_RULES: dict[str, tuple[str, str]] = {
+    "builtins.eval": ("pickle.dynamic_code_execution", "dynamic code execution"),
+    "builtins.exec": ("pickle.dynamic_code_execution", "dynamic code execution"),
+    "os.system": ("pickle.command_execution", "command execution"),
+    "posix.system": ("pickle.command_execution", "command execution"),
+    "nt.system": ("pickle.command_execution", "command execution"),
+    "os.popen": ("pickle.command_execution", "command execution"),
+    "posix.popen": ("pickle.command_execution", "command execution"),
+    "subprocess.Popen": ("pickle.command_execution", "process execution"),
+    "subprocess.call": ("pickle.command_execution", "process execution"),
+    "subprocess.check_call": ("pickle.command_execution", "process execution"),
+    "subprocess.check_output": ("pickle.command_execution", "process execution"),
+    "subprocess.run": ("pickle.command_execution", "process execution"),
+    "builtins.__import__": ("pickle.dynamic_loading", "dynamic import"),
+    "importlib.import_module": ("pickle.dynamic_loading", "dynamic import"),
+    "runpy.run_module": ("pickle.dynamic_loading", "dynamic module loading"),
+    "runpy.run_path": ("pickle.dynamic_loading", "dynamic code loading"),
+    "builtins.open": ("pickle.filesystem_access", "filesystem access"),
+    "io.open": ("pickle.filesystem_access", "filesystem access"),
+    "os.open": ("pickle.filesystem_access", "filesystem access"),
+    "os.remove": ("pickle.filesystem_access", "filesystem mutation"),
+    "os.unlink": ("pickle.filesystem_access", "filesystem mutation"),
+    "os.rename": ("pickle.filesystem_access", "filesystem mutation"),
+    "os.replace": ("pickle.filesystem_access", "filesystem mutation"),
+    "pathlib.Path.open": ("pickle.filesystem_access", "filesystem access"),
+    "pathlib.Path.read_bytes": ("pickle.filesystem_access", "filesystem access"),
+    "pathlib.Path.read_text": ("pickle.filesystem_access", "filesystem access"),
+    "pathlib.Path.write_bytes": ("pickle.filesystem_access", "filesystem mutation"),
+    "pathlib.Path.write_text": ("pickle.filesystem_access", "filesystem mutation"),
+    "pathlib.Path.unlink": ("pickle.filesystem_access", "filesystem mutation"),
+    "shutil.copy": ("pickle.filesystem_access", "filesystem mutation"),
+    "shutil.move": ("pickle.filesystem_access", "filesystem mutation"),
+    "shutil.rmtree": ("pickle.filesystem_access", "filesystem mutation"),
+    "socket.create_connection": ("pickle.network_access", "network access"),
+    "urllib.request.urlopen": ("pickle.network_access", "network access"),
+    "urllib.request.urlretrieve": ("pickle.network_access", "network access"),
+    "http.client.HTTPConnection.connect": ("pickle.network_access", "network access"),
+    "smtplib.SMTP.connect": ("pickle.network_access", "network access"),
+    "ftplib.FTP.connect": ("pickle.network_access", "network access"),
+}

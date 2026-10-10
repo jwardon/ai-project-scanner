@@ -11,7 +11,8 @@ import os
 import pickletools
 
 from .pickle_interpreter import PickleInterpreter
-from .results import Evidence, ScanResult
+from .pickle_rules import PICKLE_CAPABILITY_RULES
+from .results import Evidence, Finding, Invocation, ScanResult
 
 
 def scan_pickle_file(path: str | os.PathLike) -> ScanResult:
@@ -35,7 +36,38 @@ def scan_pickle_file(path: str | os.PathLike) -> ScanResult:
                     attributes={"opcode": opcode.name, "offset": pos},
                 )
             )
-            result.results.extend(interpreter.step(opcode.name, arg, pos))
+            for analysis_result in interpreter.step(opcode.name, arg, pos):
+                result.results.append(analysis_result)
+                if isinstance(analysis_result, Invocation):
+                    rule = PICKLE_CAPABILITY_RULES.get(analysis_result.callable)
+                    if rule is not None:
+                        rule_id, capability = rule
+                        result.results.append(
+                            Finding(
+                                rule_id=rule_id,
+                                artifact_path=result.target,
+                                message=(
+                                    f"Pickle invokes {analysis_result.callable}, "
+                                    f"establishing {capability} during deserialization."
+                                ),
+                                evidence=[
+                                    Evidence(
+                                        description=(
+                                            f"Resolved invocation of "
+                                            f"{analysis_result.callable}"
+                                        ),
+                                        location=f"byte offset {analysis_result.offset}",
+                                        value=analysis_result.arguments,
+                                        attributes={
+                                            "callable": analysis_result.callable,
+                                            "arguments": analysis_result.arguments,
+                                            "opcode": analysis_result.operation,
+                                            "offset": analysis_result.offset,
+                                        },
+                                    )
+                                ],
+                            )
+                        )
     except Exception as exc:  # malformed input must yield a controlled error
         result.errors.append(f"Malformed or truncated pickle: {exc}")
     return result

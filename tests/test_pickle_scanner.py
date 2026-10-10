@@ -3,6 +3,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 from ai_project_scanner import scan_pickle_file
 from ai_project_scanner.__main__ import main
 
@@ -110,6 +112,65 @@ def _scan(tmp_path, data):
     return scan_pickle_file(p)
 
 
+def _global_reduce(module, name, arguments=b""):
+    return b"c" + module.encode() + b"\n" + name.encode() + b"\n(" + arguments + b"tR."
+
+
+@pytest.mark.parametrize(
+    ("module", "name", "arguments", "rule_id"),
+    [
+        ("os", "system", b"S'id'\n", "pickle.command_execution"),
+        ("builtins", "eval", b"S'not parsed or executed'\n",
+         "pickle.dynamic_code_execution"),
+        ("builtins", "exec", b"S'not parsed or executed'\n",
+         "pickle.dynamic_code_execution"),
+        ("importlib", "import_module", b"S'example_module'\n",
+         "pickle.dynamic_loading"),
+        ("builtins", "open", b"S'/tmp/example'\n", "pickle.filesystem_access"),
+        ("socket", "create_connection", b"S'example.invalid'\n",
+         "pickle.network_access"),
+    ],
+)
+def test_capability_invocations_produce_findings(
+    tmp_path, module, name, arguments, rule_id
+):
+    path = tmp_path / "x.pkl"
+    result = _scan(path.parent, _global_reduce(module, name, arguments))
+
+    [finding] = result.findings
+    [invocation] = result.invocations
+    assert finding.rule_id == rule_id
+    assert finding.artifact_path == str(path)
+    assert module + "." + name in finding.message
+    assert finding.evidence[0].attributes == {
+        "callable": invocation.callable,
+        "arguments": invocation.arguments,
+        "opcode": "REDUCE",
+        "offset": invocation.offset,
+    }
+    assert finding.evidence[0].value == invocation.arguments
+    assert finding.evidence[0].location == f"byte offset {invocation.offset}"
+
+
+def test_multiple_capabilities_produce_findings_for_one_artifact(tmp_path):
+    commands = _global_reduce("os", "system", b"S'id'\n")[:-1] + b"0"
+    network = _global_reduce(
+        "urllib.request", "urlopen", b"S'https://example.invalid'\n"
+    )
+    result = _scan(tmp_path, commands + network)
+
+    assert [finding.rule_id for finding in result.findings] == [
+        "pickle.command_execution",
+        "pickle.network_access",
+    ]
+
+
+def test_global_reference_without_invocation_is_not_a_finding(tmp_path):
+    result = _scan(tmp_path, b"cbuiltins\nopen\n.")
+
+    assert result.ok and not result.invocations and not result.findings
+
+
 def test_global_reduce_traced_with_arguments(tmp_path):
     r = _scan(tmp_path, b"cbuiltins\neval\n(S'1+1'\ntR.")
     assert r.ok and not r.limitations
@@ -210,6 +271,14 @@ def test_cli_prints_invocation(tmp_path, capsys):
     assert "builtins.eval('1+1',)" in capsys.readouterr().out
 
 
+def test_cli_prints_capability_finding(tmp_path, capsys):
+    p = tmp_path / "a.pkl"
+    p.write_bytes(_global_reduce("os", "system", b"S'id'\n"))
+
+    assert main([str(p)]) == 0
+    assert "finding: pickle.command_execution" in capsys.readouterr().out
+
+
 def test_build_and_newobj_record_limitations(tmp_path):
     r = _scan(tmp_path, b"cos\nsystem\n)\x81.")
     assert any(lim.operation == "NEWOBJ" for lim in r.limitations)
@@ -219,7 +288,11 @@ def test_build_and_newobj_record_limitations(tmp_path):
 
 def test_results_preserve_ordering(tmp_path):
     r = _scan(tmp_path, b"cos\nsystem\n(S'id'\ntRN\x81.")
-    kinds = [type(e).__name__ for e in r.results if type(e).__name__ != "Evidence"]
+    kinds = [
+        type(e).__name__
+        for e in r.results
+        if type(e).__name__ not in ("Evidence", "Finding")
+    ]
     assert kinds == ["Invocation", "Limitation"]
     pos = [i for i, e in enumerate(r.results) if type(e).__name__ == "Invocation"][0]
     assert r.results[pos - 1].attributes["opcode"] == "REDUCE"

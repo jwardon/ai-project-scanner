@@ -6,7 +6,7 @@ import sys
 
 from .discovery import discover_files
 from .pickle_scanner import scan_pickle_file
-from .results import Evidence, Invocation
+from .results import Evidence, Finding, Invocation
 
 _MAX_VALUE = 200
 
@@ -43,6 +43,11 @@ def main(argv: list[str] | None = None) -> int:
                 print(
                     f"{analysis_result.offset:>8}  {analysis_result.operation} -> "
                     f"{analysis_result.callable}{_truncate(args)}"
+                )
+            elif isinstance(analysis_result, Finding):
+                print(
+                    f"finding: {analysis_result.rule_id}: "
+                    f"{analysis_result.message}"
                 )
             else:
                 print(
