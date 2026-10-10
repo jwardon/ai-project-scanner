@@ -59,3 +59,24 @@ def test_directory_symlink_not_followed(tmp_path):
     scan.mkdir()
     (scan / "link").symlink_to(outside, target_is_directory=True)
     assert discover_files(scan) == []
+
+
+def test_unexpected_failure_in_one_artifact_does_not_stop_others(
+    tmp_path, monkeypatch, capsys
+):
+    import ai_project_scanner.cli as cli
+
+    _pkl(tmp_path / "a.pkl")
+    _pkl(tmp_path / "b.pkl")
+    real_scan = cli.scan_pickle_file
+
+    def flaky(path):
+        if str(path).endswith("a.pkl"):
+            raise RuntimeError("boom")
+        return real_scan(path)
+
+    monkeypatch.setattr(cli, "scan_pickle_file", flaky)
+    assert main([str(tmp_path)]) == 1
+    cap = capsys.readouterr()
+    assert "Unexpected scan failure" in cap.out + cap.err
+    assert "b.pkl" in cap.out
