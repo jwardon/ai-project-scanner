@@ -5,7 +5,6 @@ from __future__ import annotations
 import argparse
 import os
 import sys
-import traceback
 
 from .config import ConfigError, resolve_scan_target
 from .discovery import discover_files
@@ -126,8 +125,7 @@ def main(argv: list[str] | None = None) -> int:
     for path in files:
         try:
             result = scan_pickle_file(path)
-        except Exception as err:  # noqa: BLE001  # per-artifact boundary
-            traceback.print_exc()
+        except Exception as err:  # noqa: BLE001
             result = ScanResult(target=os.fspath(path))
             result.errors.append(f"Unexpected scan failure: {err!r}")
         all_ok = all_ok and result.ok
