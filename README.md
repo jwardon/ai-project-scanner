@@ -36,11 +36,13 @@ The project is not intended to be a general-purpose network or live AI infrastru
 
 ## Usage
 
-Inspect a pickle file's opcodes without deserializing it. The target may be a file or a directory, which is searched recursively for `.pkl` and `.pickle` files:
+Statically scan pickle files without deserializing them. The target may be a file or a directory, which is searched recursively for `.pkl` and `.pickle` files:
 
 ```text
-PYTHONPATH=src python -m ai_project_scanner path/to/file.pkl
-PYTHONPATH=src python -m ai_project_scanner .
+pip install .
+scan path/to/file.pkl
+scan .
+scan --help
 ```
 
 The scanner also symbolically traces callable invocation (`REDUCE`) for a supported subset of pickle semantics, reporting the callable and statically resolvable arguments, and lists analysis limitations where behavior cannot be determined. Nothing is deserialized.
