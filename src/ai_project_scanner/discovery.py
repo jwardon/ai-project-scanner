@@ -5,11 +5,11 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-SUPPORTED_SUFFIXES = frozenset({".pkl", ".pickle"})
+SUPPORTED_SUFFIXES = frozenset({".pkl", ".pickle", ".py"})
 
 
 def is_supported(path: str | os.PathLike) -> bool:
-    """Return True if the path has a supported file type (currently pickle)."""
+    """Return True if the path has a supported file type."""
     return Path(path).suffix.lower() in SUPPORTED_SUFFIXES
 
 

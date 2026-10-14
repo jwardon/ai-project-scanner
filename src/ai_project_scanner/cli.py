@@ -9,6 +9,7 @@ import sys
 from .config import ConfigError, resolve_scan_target
 from .discovery import discover_files
 from .pickle_scanner import scan_pickle_file
+from .python_scanner import scan_python_file
 from .results import Evidence, Finding, Invocation, ScanResult
 
 _MAX_VALUE = 200
@@ -16,7 +17,7 @@ _MAX_VALUE = 200
 _DESCRIPTION = """\
 Statically scan AI/ML project artifacts for security-relevant behavior.
 Scanned files are never deserialized or executed. Currently supported:
-pickle files (.pkl, .pickle)."""
+pickle files (.pkl, .pickle) and Python source (.py)."""
 
 _EPILOG = """\
 If PATH is omitted, the target comes from ai-project-scanner.toml, then
@@ -63,12 +64,16 @@ def _report(result: ScanResult) -> None:
     print(f"Target: {result.target}")
     for analysis_result in result.results:
         if isinstance(analysis_result, Evidence):
-            offset = analysis_result.attributes["offset"]
-            opcode = analysis_result.attributes["opcode"]
-            line = f"{offset:>8}  {opcode}"
-            if analysis_result.value is not None:
-                line += f"  {_truncate(repr(analysis_result.value))}"
-            print(line)
+            if "offset" in analysis_result.attributes:
+                offset = analysis_result.attributes["offset"]
+                opcode = analysis_result.attributes["opcode"]
+                line = f"{offset:>8}  {opcode}"
+                if analysis_result.value is not None:
+                    line += f"  {_truncate(repr(analysis_result.value))}"
+                print(line)
+            else:
+                location = analysis_result.location or ""
+                print(f"{location:>24}  {analysis_result.description}")
         elif isinstance(analysis_result, Invocation):
             arguments = analysis_result.arguments
             shown = "<unresolved>" if arguments is None else repr(arguments)
@@ -124,7 +129,10 @@ def main(argv: list[str] | None = None) -> int:
     all_ok = True
     for path in files:
         try:
-            result = scan_pickle_file(path)
+            if path.suffix.lower() == ".py":
+                result = scan_python_file(path)
+            else:
+                result = scan_pickle_file(path)
         except Exception as err:  # noqa: BLE001
             result = ScanResult(target=os.fspath(path))
             result.errors.append(f"Unexpected scan failure: {err!r}")
