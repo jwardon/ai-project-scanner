@@ -29,6 +29,28 @@ def test_directory_recursive_nested_and_multiple(tmp_path, capsys):
         assert f"Target: {p}" in out
 
 
+def test_directory_scans_python_and_pickle_in_sorted_order(tmp_path, capsys):
+    python = tmp_path / "a.py"
+    python.write_text("inspect()\n")
+    pickle = _pkl(tmp_path / "b.pkl")
+
+    assert discover_files(tmp_path) == [python, pickle]
+    assert main([str(tmp_path)]) == 0
+    out = capsys.readouterr().out
+    assert out.index(f"Target: {python}") < out.index(f"Target: {pickle}")
+    assert "Python call expression" in out
+    assert "PROTO" in out
+
+
+def test_invalid_python_file_fails_scan(tmp_path, capsys):
+    python = tmp_path / "invalid.py"
+    python.write_text("def unfinished(\n")
+
+    assert discover_files(python) == [python]
+    assert main([str(python)]) == 1
+    assert "Cannot parse Python source" in capsys.readouterr().err
+
+
 def test_dot_target(tmp_path, monkeypatch, capsys):
     _pkl(tmp_path / "sub" / "a.pkl")
     monkeypatch.chdir(tmp_path)
