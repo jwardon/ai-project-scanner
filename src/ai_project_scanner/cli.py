@@ -64,16 +64,12 @@ def _report(result: ScanResult) -> None:
     print(f"Target: {result.target}")
     for analysis_result in result.results:
         if isinstance(analysis_result, Evidence):
-            if "offset" in analysis_result.attributes:
-                offset = analysis_result.attributes["offset"]
-                opcode = analysis_result.attributes["opcode"]
-                line = f"{offset:>8}  {opcode}"
-                if analysis_result.value is not None:
-                    line += f"  {_truncate(repr(analysis_result.value))}"
-                print(line)
-            else:
-                location = analysis_result.location or ""
-                print(f"{location:>24}  {analysis_result.description}")
+            offset = analysis_result.attributes["offset"]
+            opcode = analysis_result.attributes["opcode"]
+            line = f"{offset:>8}  {opcode}"
+            if analysis_result.value is not None:
+                line += f"  {_truncate(repr(analysis_result.value))}"
+            print(line)
         elif isinstance(analysis_result, Invocation):
             arguments = analysis_result.arguments
             shown = "<unresolved>" if arguments is None else repr(arguments)

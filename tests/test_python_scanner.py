@@ -1,21 +1,15 @@
 from ai_project_scanner.python_scanner import scan_python_file
 
 
-def test_scan_python_file_records_call_source_location(tmp_path):
+def test_scan_python_file_parses_valid_python(tmp_path):
     path = tmp_path / "source.py"
-    path.write_text("value = 1\ninspect(value)\n")
+    path.write_text("value = 1\nprint(value)\n")
 
     result = scan_python_file(path)
 
     assert result.ok
-    assert len(result.evidence) == 1
-    assert result.evidence[0].description == "Python call expression"
-    assert result.evidence[0].location == "line 2, column 0"
-    assert result.evidence[0].attributes == {
-        "node": "Call",
-        "line": 2,
-        "column": 0,
-    }
+    assert result.results == []
+    assert result.errors == []
 
 
 def test_invalid_python_is_an_analysis_error(tmp_path):
@@ -54,5 +48,5 @@ def test_scan_python_file_does_not_execute_source(tmp_path):
     result = scan_python_file(path)
 
     assert result.ok
-    assert len(result.evidence) == 1
+    assert result.results == []
     assert not marker.exists()

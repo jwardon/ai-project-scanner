@@ -6,7 +6,7 @@ import ast
 import os
 import tokenize
 
-from .results import Evidence, ScanResult
+from .results import ScanResult
 
 
 def scan_python_file(path: str | os.PathLike) -> ScanResult:
@@ -23,25 +23,7 @@ def scan_python_file(path: str | os.PathLike) -> ScanResult:
         return result
 
     try:
-        tree = ast.parse(source, filename=os.fspath(path))
+        ast.parse(source, filename=os.fspath(path))
     except SyntaxError as exc:
         result.errors.append(f"Cannot parse Python source: {exc}")
-        return result
-
-    calls = sorted(
-        (node for node in ast.walk(tree) if isinstance(node, ast.Call)),
-        key=lambda node: (node.lineno, node.col_offset),
-    )
-    for call in calls:
-        result.results.append(
-            Evidence(
-                description="Python call expression",
-                location=f"line {call.lineno}, column {call.col_offset}",
-                attributes={
-                    "node": "Call",
-                    "line": call.lineno,
-                    "column": call.col_offset,
-                },
-            )
-        )
     return result

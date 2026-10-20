@@ -38,7 +38,6 @@ def test_directory_scans_python_and_pickle_in_sorted_order(tmp_path, capsys):
     assert main([str(tmp_path)]) == 0
     out = capsys.readouterr().out
     assert out.index(f"Target: {python}") < out.index(f"Target: {pickle}")
-    assert "Python call expression" in out
     assert "PROTO" in out
 
 
