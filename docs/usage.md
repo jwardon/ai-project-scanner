@@ -19,7 +19,7 @@ scan [path]
 - **File:** `scan model.pkl` scans that single file.
 - **Directory:** `scan models/` recursively scans supported files beneath the directory. `scan .` scans the current directory.
 
-Currently supported files are pickle files (`.pkl` and `.pickle`). Scanned files are analyzed statically and are never loaded or executed.
+Currently supported files are pickle files (`.pkl` and `.pickle`) and Python source files (`.py`). Pickle files are inspected without deserialization, and Python source is parsed without execution. Python analysis recognizes selected `pickle`/`joblib` deserializers, Hugging Face model/artifact and dataset acquisition APIs, and LangChain Hub prompt acquisition. Acquisition is reported as informational evidence, while local deserialization and explicit `trust_remote_code=True` are reported as security concerns. API coverage is intentionally limited; absence of a report does not establish that behavior is absent.
 
 If the target contains no supported files, the scan reports `No supported files found.`
 

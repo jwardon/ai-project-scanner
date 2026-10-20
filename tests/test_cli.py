@@ -33,6 +33,19 @@ def test_finding_shows_evidence(tmp_path, capsys):
     assert "evidence:" in out and "byte offset" in out
 
 
+def test_python_source_reports_behavior_and_location(tmp_path, capsys):
+    p = tmp_path / "source.py"
+    p.write_text("from datasets import load_dataset\nload_dataset('org/data')\n")
+
+    assert main([str(p)]) == 0
+
+    out = capsys.readouterr().out
+    assert "external dataset acquisition via datasets.load_dataset" in out
+    assert "line 2, column 1" in out
+    assert "no security findings identified; informational evidence" in out
+    assert "finding:" not in out
+
+
 def test_limitation_distinct_from_finding(tmp_path, capsys):
     (tmp_path / "a.pkl").write_bytes(b"Pabc\n.")
     assert main([str(tmp_path)]) == 0
