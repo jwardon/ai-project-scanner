@@ -10,7 +10,7 @@ from .results import ScanResult
 
 
 def scan_python_file(path: str | os.PathLike) -> ScanResult:
-    """Parse Python source and record call-expression locations without execution."""
+    """Parse Python source without executing it."""
     result = ScanResult(target=os.fspath(path))
     try:
         with tokenize.open(path) as source_file:
