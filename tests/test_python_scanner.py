@@ -97,7 +97,7 @@ def test_model_acquisition_and_remote_code_trust_are_distinct(tmp_path):
 
     [acquisition] = [
         evidence for evidence in result.evidence
-        if evidence.attributes["operation"] == "remote model acquisition"
+        if evidence.attributes["operation"] == "model loading"
     ]
     [trust] = result.findings
     assert acquisition.attributes["api"] == "transformers.AutoModel.from_pretrained"
@@ -107,7 +107,7 @@ def test_model_acquisition_and_remote_code_trust_are_distinct(tmp_path):
     assert trust.evidence[0].attributes["api"] == acquisition.attributes["api"]
 
 
-def test_dataset_prompt_and_artifact_acquisition_are_informational(tmp_path):
+def test_acquisition_operations_are_informational_and_neutral_when_needed(tmp_path):
     path = tmp_path / "source.py"
     path.write_text(
         "from datasets import load_dataset as dataset\n"
@@ -122,8 +122,8 @@ def test_dataset_prompt_and_artifact_acquisition_are_informational(tmp_path):
 
     assert not result.findings
     assert [e.attributes["operation"] for e in result.evidence] == [
-        "external dataset acquisition",
-        "external prompt acquisition",
+        "dataset loading",
+        "remote prompt acquisition",
         "remote artifact acquisition",
     ]
     assert [e.attributes["api"] for e in result.evidence] == [
@@ -132,6 +132,22 @@ def test_dataset_prompt_and_artifact_acquisition_are_informational(tmp_path):
         "huggingface_hub.hf_hub_download",
     ]
     assert [e.attributes["line"] for e in result.evidence] == [4, 5, 6]
+
+
+def test_transformer_component_loading_is_not_labeled_model_acquisition(tmp_path):
+    path = tmp_path / "source.py"
+    path.write_text(
+        "from transformers import AutoTokenizer, AutoConfig\n"
+        "AutoTokenizer.from_pretrained('local/tokenizer')\n"
+        "AutoConfig.from_pretrained('local/config')\n"
+    )
+
+    result = scan_python_file(path)
+
+    assert [e.attributes["operation"] for e in result.evidence] == [
+        "model artifact loading",
+        "model artifact loading",
+    ]
 
 
 def test_similarly_named_unimported_methods_are_not_detected(tmp_path):
@@ -149,6 +165,56 @@ def test_similarly_named_unimported_methods_are_not_detected(tmp_path):
 
     assert result.ok
     assert not result.results
+
+
+def test_relative_imports_do_not_match_supported_apis(tmp_path):
+    path = tmp_path / "source.py"
+    path.write_text(
+        "from .pickle import load\n"
+        "from .datasets import load_dataset\n"
+        "load(file)\n"
+        "load_dataset('local')\n"
+    )
+
+    result = scan_python_file(path)
+
+    assert result.ok
+    assert not result.results
+
+
+def test_rebinding_imported_names_disables_api_matching(tmp_path):
+    path = tmp_path / "source.py"
+    path.write_text(
+        "import pickle as p\n"
+        "from transformers import AutoModel as Model\n"
+        "p = local_module\n"
+        "Model = LocalModel\n"
+        "p.load(file)\n"
+        "Model.from_pretrained('local')\n"
+    )
+
+    result = scan_python_file(path)
+
+    assert result.ok
+    assert not result.results
+
+
+def test_import_bindings_are_isolated_between_function_scopes(tmp_path):
+    path = tmp_path / "source.py"
+    path.write_text(
+        "def local_deserialization():\n"
+        "    from pickle import load as deserialize\n"
+        "    deserialize(file)\n"
+        "\n"
+        "def unrelated_scope():\n"
+        "    deserialize(file)\n"
+    )
+
+    result = scan_python_file(path)
+
+    [finding] = result.findings
+    assert finding.evidence[0].attributes["api"] == "pickle.load"
+    assert finding.evidence[0].attributes["line"] == 3
 
 
 def test_remote_code_requires_explicit_true(tmp_path):

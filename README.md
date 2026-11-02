@@ -16,7 +16,7 @@ AI Project Scanner applies security principles described in [AI Security 101](ht
 
 This project is in early development.
 
-The scanner recursively discovers pickle files (`.pkl` and `.pickle`) and Python source files (`.py`). Pickle files are inspected without deserialization. Python source is parsed without execution to identify selected local deserialization, remote model and artifact acquisition, dataset acquisition, and prompt acquisition behavior. Acquisition is reported as informational evidence; local deserialization and explicit remote-code trust are reported as security concerns.
+The scanner recursively discovers pickle files (`.pkl` and `.pickle`) and Python source files (`.py`). Pickle files are inspected without deserialization. Python source is parsed without execution to identify selected local deserialization, model and artifact loading, dataset loading, and Hub prompt/artifact acquisition behavior. Acquisition and loading observations are informational evidence; local deserialization and explicit remote-code trust are reported as security concerns.
 
 Functionality and interfaces should be considered unstable until the first release.
 
