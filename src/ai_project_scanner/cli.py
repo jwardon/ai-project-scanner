@@ -52,24 +52,31 @@ def _print_finding(finding: Finding) -> None:
     print(f"finding: {finding.rule_id}: {finding.message}")
     print(f"  artifact: {finding.artifact_path}")
     for evidence in finding.evidence:
-        line = f"  evidence: {evidence.description}"
-        if evidence.location:
-            line += f" ({evidence.location})"
-        print(line)
+        _print_evidence(evidence)
         if evidence.value is not None:
             print(f"    value: {_truncate(repr(evidence.value))}")
+
+
+def _print_evidence(evidence: Evidence) -> None:
+    line = f"  evidence: {evidence.description}"
+    if evidence.location:
+        line += f" ({evidence.location})"
+    print(line)
 
 
 def _report(result: ScanResult) -> None:
     print(f"Target: {result.target}")
     for analysis_result in result.results:
         if isinstance(analysis_result, Evidence):
-            offset = analysis_result.attributes["offset"]
-            opcode = analysis_result.attributes["opcode"]
-            line = f"{offset:>8}  {opcode}"
-            if analysis_result.value is not None:
-                line += f"  {_truncate(repr(analysis_result.value))}"
-            print(line)
+            if "offset" in analysis_result.attributes:
+                offset = analysis_result.attributes["offset"]
+                opcode = analysis_result.attributes["opcode"]
+                line = f"{offset:>8}  {opcode}"
+                if analysis_result.value is not None:
+                    line += f"  {_truncate(repr(analysis_result.value))}"
+                print(line)
+            else:
+                _print_evidence(analysis_result)
         elif isinstance(analysis_result, Invocation):
             arguments = analysis_result.arguments
             shown = "<unresolved>" if arguments is None else repr(arguments)
@@ -96,6 +103,11 @@ def _report(result: ScanResult) -> None:
             f"Result: no findings identified, but analysis was incomplete "
             f"({len(result.limitations)} limitation(s)); this result does not "
             "establish that the file is safe."
+        )
+    elif any("api" in evidence.attributes for evidence in result.evidence):
+        print(
+            "Result: no security findings identified; informational evidence "
+            "was reported. This does not establish that the file is safe."
         )
     else:
         print(
