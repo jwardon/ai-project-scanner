@@ -42,6 +42,7 @@ def test_python_source_reports_behavior_and_location(tmp_path, capsys):
     out = capsys.readouterr().out
     assert "dataset loading via datasets.load_dataset" in out
     assert "line 2, column 1" in out
+    assert "value: 'org/data'" in out
     assert "no security findings identified; informational evidence" in out
     assert "finding:" not in out
 

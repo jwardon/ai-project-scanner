@@ -124,6 +124,8 @@ class _SourceAnalyzer(ast.NodeVisitor):
                 if node.id in values:
                     return values[node.id]
             return _UNRESOLVED
+        if isinstance(node, ast.NamedExpr) and isinstance(node.target, ast.Name):
+            return self._resolve_value(node.value)
         if (
             isinstance(node, ast.BinOp)
             and isinstance(node.op, ast.Add)
@@ -254,13 +256,26 @@ class _SourceAnalyzer(ast.NodeVisitor):
 
     def visit_AugAssign(self, node: ast.AugAssign) -> None:
         self.visit(node.value)
+        value = _UNRESOLVED
+        previous = self._resolve_value(node.target)
+        assigned = self._resolve_value(node.value)
+        if (
+            isinstance(node.op, ast.Add)
+            and isinstance(previous, str)
+            and isinstance(assigned, str)
+        ):
+            value = previous + assigned
         for name in _bound_names(node.target):
-            self._bind(name, None)
+            self._bind(name, None, value)
 
     def visit_NamedExpr(self, node: ast.NamedExpr) -> None:
         self.visit(node.value)
+        value = self._resolve_value(node.value)
         for name in _bound_names(node.target):
-            self._bind(name, None)
+            assigned_value = (
+                value if isinstance(node.target, ast.Name) else _UNRESOLVED
+            )
+            self._bind(name, None, assigned_value)
 
     def visit_Delete(self, node: ast.Delete) -> None:
         for target in node.targets:

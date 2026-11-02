@@ -263,6 +263,21 @@ def test_resource_references_resolve_literals_and_simple_local_expressions(
     assert finding.evidence[0].attributes["resource"] == "weights.pkl"
 
 
+def test_resource_references_resolve_augmented_and_named_assignments(tmp_path):
+    path = tmp_path / "source.py"
+    path.write_text(
+        "from transformers import AutoModel\n"
+        "prefix = 'org/'\n"
+        "prefix += 'model'\n"
+        "AutoModel.from_pretrained((model_id := prefix))\n"
+    )
+
+    result = scan_python_file(path)
+
+    [evidence] = result.evidence
+    assert evidence.value == "org/model"
+
+
 def test_unresolved_resource_does_not_suppress_behavior_or_add_limitation(
     tmp_path,
 ):
