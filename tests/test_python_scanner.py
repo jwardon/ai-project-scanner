@@ -229,3 +229,87 @@ def test_remote_code_requires_explicit_true(tmp_path):
 
     assert not result.findings
     assert len(result.evidence) == 2
+
+
+def test_resource_references_resolve_literals_and_simple_local_expressions(
+    tmp_path,
+):
+    path = tmp_path / "source.py"
+    path.write_text(
+        "import transformers\n"
+        "from datasets import load_dataset\n"
+        "from langchain import hub\n"
+        "import pickle\n"
+        "prefix = 'org/'\n"
+        "model_id = prefix + 'model'\n"
+        "owner = 'org'\n"
+        "prompt_id = f'{owner}/prompt'\n"
+        "transformers.AutoModel.from_pretrained(model_id)\n"
+        "load_dataset(path='org/data')\n"
+        "hub.pull(prompt_id)\n"
+        "pickle.load('weights.pkl')\n"
+    )
+
+    result = scan_python_file(path)
+
+    assert [
+        evidence.value for evidence in result.evidence
+    ] == ["org/model", "org/data", "org/prompt"]
+    assert [
+        evidence.attributes["resource"] for evidence in result.evidence
+    ] == ["org/model", "org/data", "org/prompt"]
+    [finding] = result.findings
+    assert finding.evidence[0].value == "weights.pkl"
+    assert finding.evidence[0].attributes["resource"] == "weights.pkl"
+
+
+def test_unresolved_resource_does_not_suppress_behavior_or_add_limitation(
+    tmp_path,
+):
+    path = tmp_path / "source.py"
+    path.write_text(
+        "from transformers import AutoModel\n"
+        "model_id = get_model_id()\n"
+        "AutoModel.from_pretrained(model_id)\n"
+    )
+
+    result = scan_python_file(path)
+
+    [evidence] = result.evidence
+    assert evidence.attributes["operation"] == "model loading"
+    assert evidence.value is None
+    assert "resource" not in evidence.attributes
+    assert not result.limitations
+
+
+def test_values_reassigned_in_conditional_code_are_not_guessed(tmp_path):
+    path = tmp_path / "source.py"
+    path.write_text(
+        "from transformers import AutoModel\n"
+        "model_id = 'org/model'\n"
+        "if use_dynamic_model:\n"
+        "    model_id = get_model_id()\n"
+        "AutoModel.from_pretrained(model_id)\n"
+    )
+
+    result = scan_python_file(path)
+
+    [evidence] = result.evidence
+    assert evidence.attributes["operation"] == "model loading"
+    assert evidence.value is None
+    assert not result.limitations
+
+
+def test_locally_resolved_true_enables_remote_code_finding(tmp_path):
+    path = tmp_path / "source.py"
+    path.write_text(
+        "from transformers import AutoModel\n"
+        "trust = True\n"
+        "AutoModel.from_pretrained('org/model', trust_remote_code=trust)\n"
+    )
+
+    result = scan_python_file(path)
+
+    [finding] = result.findings
+    assert finding.rule_id == "python.remote_code_trust"
+    assert finding.evidence[0].value == "org/model"
