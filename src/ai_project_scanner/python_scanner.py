@@ -22,6 +22,16 @@ _TRANSFORMER_AUTO_CLASSES = {
     "AutoProcessor",
     "AutoTokenizer",
 }
+_UNRESOLVED = object()
+_RESOURCE_KEYWORDS = {
+    "file",
+    "filename",
+    "model_id",
+    "name",
+    "path",
+    "pretrained_model_name_or_path",
+    "repo_id",
+}
 
 
 def _operation(api: str) -> str | None:
@@ -47,10 +57,12 @@ def _operation(api: str) -> str | None:
     return None
 
 
-def _evidence(api: str, operation: str, node: ast.Call) -> Evidence:
+def _evidence(
+    api: str, operation: str, node: ast.Call, resource: object = _UNRESOLVED
+) -> Evidence:
     line = node.lineno
     column = node.col_offset + 1
-    return Evidence(
+    evidence = Evidence(
         description=f"{operation} via {api}",
         location=f"line {line}, column {column}",
         attributes={
@@ -60,6 +72,10 @@ def _evidence(api: str, operation: str, node: ast.Call) -> Evidence:
             "column": column,
         },
     )
+    if resource is not _UNRESOLVED:
+        evidence.value = resource
+        evidence.attributes["resource"] = resource
+    return evidence
 
 
 def _bound_names(target: ast.AST) -> set[str]:
@@ -73,14 +89,22 @@ def _bound_names(target: ast.AST) -> set[str]:
 class _SourceAnalyzer(ast.NodeVisitor):
     def __init__(self, result: ScanResult):
         self.result = result
-        self.scopes: list[tuple[str, dict[str, str | None]]] = [("module", {})]
+        self.scopes: list[
+            tuple[str, dict[str, str | None], dict[str, object]]
+        ] = [("module", {}, {})]
 
-    def _bind(self, name: str, api: str | None) -> None:
+    def _bind(
+        self,
+        name: str,
+        api: str | None,
+        value: object = _UNRESOLVED,
+    ) -> None:
         self.scopes[-1][1][name] = api
+        self.scopes[-1][2][name] = value
 
     def _resolve(self, node: ast.AST) -> str | None:
         if isinstance(node, ast.Name):
-            for _kind, names in reversed(self.scopes):
+            for _kind, names, _values in reversed(self.scopes):
                 if node.id in names:
                     return names[node.id]
             return None
@@ -88,6 +112,57 @@ class _SourceAnalyzer(ast.NodeVisitor):
             parent = self._resolve(node.value)
             return f"{parent}.{node.attr}" if parent else None
         return None
+
+    def _resolve_value(self, node: ast.AST) -> object:
+        if isinstance(node, ast.Constant) and (
+            node.value is None
+            or type(node.value) in {str, int, float, bool}
+        ):
+            return node.value
+        if isinstance(node, ast.Name):
+            for _kind, _names, values in reversed(self.scopes):
+                if node.id in values:
+                    return values[node.id]
+            return _UNRESOLVED
+        if isinstance(node, ast.NamedExpr) and isinstance(node.target, ast.Name):
+            return self._resolve_value(node.value)
+        if (
+            isinstance(node, ast.BinOp)
+            and isinstance(node.op, ast.Add)
+        ):
+            left = self._resolve_value(node.left)
+            right = self._resolve_value(node.right)
+            if isinstance(left, str) and isinstance(right, str):
+                return left + right
+        if isinstance(node, ast.JoinedStr):
+            parts: list[str] = []
+            for part in node.values:
+                if isinstance(part, ast.Constant) and isinstance(part.value, str):
+                    parts.append(part.value)
+                elif (
+                    isinstance(part, ast.FormattedValue)
+                    and part.conversion == -1
+                    and part.format_spec is None
+                ):
+                    value = self._resolve_value(part.value)
+                    if value is _UNRESOLVED or not (
+                        value is None
+                        or type(value) in {str, int, float, bool}
+                    ):
+                        return _UNRESOLVED
+                    parts.append(str(value))
+                else:
+                    return _UNRESOLVED
+            return "".join(parts)
+        return _UNRESOLVED
+
+    def _resource(self, node: ast.Call) -> object:
+        if node.args:
+            return self._resolve_value(node.args[0])
+        for keyword in node.keywords:
+            if keyword.arg in _RESOURCE_KEYWORDS:
+                return self._resolve_value(keyword.value)
+        return _UNRESOLVED
 
     def visit_Import(self, node: ast.Import) -> None:
         for alias in node.names:
@@ -111,7 +186,8 @@ class _SourceAnalyzer(ast.NodeVisitor):
         api = self._resolve(node.func)
         operation = _operation(api) if api else None
         if operation is not None:
-            evidence = _evidence(api, operation, node)
+            resource = self._resource(node)
+            evidence = _evidence(api, operation, node, resource)
             if operation == "local artifact deserialization":
                 self.result.results.append(
                     Finding(
@@ -129,8 +205,7 @@ class _SourceAnalyzer(ast.NodeVisitor):
 
             trust_remote_code = any(
                 keyword.arg == "trust_remote_code"
-                and isinstance(keyword.value, ast.Constant)
-                and keyword.value.value is True
+                and self._resolve_value(keyword.value) is True
                 for keyword in node.keywords
             )
             if trust_remote_code and operation in {
@@ -139,7 +214,7 @@ class _SourceAnalyzer(ast.NodeVisitor):
                 "dataset loading",
             }:
                 trust_evidence = _evidence(
-                    api, "explicit remote-code trust", node
+                    api, "explicit remote-code trust", node, resource
                 )
                 trust_evidence.attributes["trust_remote_code"] = True
                 self.result.results.append(
@@ -157,25 +232,50 @@ class _SourceAnalyzer(ast.NodeVisitor):
 
     def visit_Assign(self, node: ast.Assign) -> None:
         self.visit(node.value)
+        value = self._resolve_value(node.value)
         for target in node.targets:
             for name in _bound_names(target):
-                self._bind(name, None)
+                assigned_value = (
+                    value if isinstance(target, ast.Name) else _UNRESOLVED
+                )
+                self._bind(name, None, assigned_value)
 
     def visit_AnnAssign(self, node: ast.AnnAssign) -> None:
         if node.value is not None:
             self.visit(node.value)
+        value = (
+            self._resolve_value(node.value)
+            if node.value is not None
+            else _UNRESOLVED
+        )
         for name in _bound_names(node.target):
-            self._bind(name, None)
+            assigned_value = (
+                value if isinstance(node.target, ast.Name) else _UNRESOLVED
+            )
+            self._bind(name, None, assigned_value)
 
     def visit_AugAssign(self, node: ast.AugAssign) -> None:
         self.visit(node.value)
+        value = _UNRESOLVED
+        previous = self._resolve_value(node.target)
+        assigned = self._resolve_value(node.value)
+        if (
+            isinstance(node.op, ast.Add)
+            and isinstance(previous, str)
+            and isinstance(assigned, str)
+        ):
+            value = previous + assigned
         for name in _bound_names(node.target):
-            self._bind(name, None)
+            self._bind(name, None, value)
 
     def visit_NamedExpr(self, node: ast.NamedExpr) -> None:
         self.visit(node.value)
+        value = self._resolve_value(node.value)
         for name in _bound_names(node.target):
-            self._bind(name, None)
+            assigned_value = (
+                value if isinstance(node.target, ast.Name) else _UNRESOLVED
+            )
+            self._bind(name, None, assigned_value)
 
     def visit_Delete(self, node: ast.Delete) -> None:
         for target in node.targets:
@@ -188,8 +288,29 @@ class _SourceAnalyzer(ast.NodeVisitor):
             self._bind(name, None)
         for statement in node.body + node.orelse:
             self.visit(statement)
+        self._clear_values()
 
     visit_AsyncFor = visit_For
+
+    def visit_If(self, node: ast.If) -> None:
+        self.generic_visit(node)
+        self._clear_values()
+
+    def visit_While(self, node: ast.While) -> None:
+        self.generic_visit(node)
+        self._clear_values()
+
+    def visit_Try(self, node: ast.Try) -> None:
+        self.generic_visit(node)
+        self._clear_values()
+
+    def visit_Match(self, node: ast.Match) -> None:
+        self.generic_visit(node)
+        self._clear_values()
+
+    def _clear_values(self) -> None:
+        for name in self.scopes[-1][2]:
+            self.scopes[-1][2][name] = _UNRESOLVED
 
     def visit_With(self, node: ast.With) -> None:
         for item in node.items:
@@ -228,7 +349,7 @@ class _SourceAnalyzer(ast.NodeVisitor):
             if self.scopes[-1][0] == "class"
             else self.scopes
         )
-        self.scopes = parent_scopes + [("function", {})]
+        self.scopes = parent_scopes + [("function", {}, {})]
         for argument in arguments:
             self._bind(argument.arg, None)
         if node.args.vararg:
@@ -247,7 +368,7 @@ class _SourceAnalyzer(ast.NodeVisitor):
         for keyword in node.keywords:
             self.visit(keyword.value)
         self._bind(node.name, None)
-        self.scopes.append(("class", {}))
+        self.scopes.append(("class", {}, {}))
         for statement in node.body:
             self.visit(statement)
         self.scopes.pop()

@@ -53,8 +53,6 @@ def _print_finding(finding: Finding) -> None:
     print(f"  artifact: {finding.artifact_path}")
     for evidence in finding.evidence:
         _print_evidence(evidence)
-        if evidence.value is not None:
-            print(f"    value: {_truncate(repr(evidence.value))}")
 
 
 def _print_evidence(evidence: Evidence) -> None:
@@ -62,6 +60,8 @@ def _print_evidence(evidence: Evidence) -> None:
     if evidence.location:
         line += f" ({evidence.location})"
     print(line)
+    if evidence.value is not None:
+        print(f"    value: {_truncate(repr(evidence.value))}")
 
 
 def _report(result: ScanResult) -> None:
